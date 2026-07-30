@@ -1,0 +1,10 @@
+$kind: http-request
+name: test requsq
+url: "{{base_url}}/test/?page=2"
+method: GET
+queryParams:
+  - key: page
+    value: "2"
+    disabled: false
+    description: ""
+order: 4034293341880527

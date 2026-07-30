@@ -1,0 +1,8 @@
+$kind: http-request
+name: New Request
+url: "{{base_url}}/test/:pk/"
+method: DELETE
+pathVariables:
+  - key: pk
+    value: "3"
+order: 4488109634455194

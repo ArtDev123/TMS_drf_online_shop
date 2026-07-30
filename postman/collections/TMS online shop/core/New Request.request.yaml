@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{base_url}}/echo/"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "message": "some_message"
+    }
+order: 2000

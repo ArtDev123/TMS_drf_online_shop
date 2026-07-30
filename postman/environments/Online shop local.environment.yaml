@@ -1,0 +1,4 @@
+name: Online shop local
+values:
+  - key: base_url
+    value: ''

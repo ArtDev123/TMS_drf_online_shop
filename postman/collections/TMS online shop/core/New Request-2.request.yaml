@@ -1,0 +1,15 @@
+$kind: http-request
+name: New Request
+url: "{{base_url}}/test/:pk/"
+method: PATCH
+pathVariables:
+  - key: pk
+    value: "6"
+    description: ""
+body:
+  type: json
+  content: |-
+    {
+        "name": "new name"
+    }
+order: 4490154284115592

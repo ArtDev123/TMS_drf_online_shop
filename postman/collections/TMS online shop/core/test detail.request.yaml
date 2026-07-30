@@ -1,0 +1,9 @@
+$kind: http-request
+name: test detail
+url: "{{base_url}}/test/:pk/"
+method: GET
+pathVariables:
+  - key: pk
+    value: "6"
+    description: ""
+order: 4479771559146440

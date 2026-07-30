@@ -1,0 +1,13 @@
+$kind: http-request
+name: post request
+url: "{{base_url}}/test/"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "name": "Dima",
+        "age": 11,
+        "date": "1850-11-11"
+    }
+order: 4475234176172311
