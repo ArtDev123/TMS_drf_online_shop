@@ -16,9 +16,31 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/health",
+              "raw": "{{base_url}}/health/",
               "host": ["{{base_url}}"],
-              "path": ["health"]
+              "path": ["health", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/echo/",
+              "host": ["{{base_url}}"],
+              "path": ["echo", ""]
             }
           },
           "response": []
@@ -26,160 +48,137 @@
       ]
     },
     {
-      "name": "Get data",
-      "event": [
+      "name": "test",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/info?id=1",
-          "host": ["{{base_url}}"],
-          "path": ["info"],
-          "query": [
-            {
-              "key": "id",
-              "value": "1"
+          "name": "New Request",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"some_message\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/test/",
+              "host": ["{{base_url}}"],
+              "path": ["test", ""]
             }
-          ]
+          },
+          "response": []
         },
-        "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
-      },
-      "response": []
-    },
-    {
-      "name": "Post data",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Successful POST request\", function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-              "});",
-              ""
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "New Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"aaa\",\n    \"age\": 20,\n    \"date\": \"2026-11-11\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/test/",
+              "host": ["{{base_url}}"],
+              "path": ["test", ""]
             }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base_url}}/info",
-          "host": ["{{base_url}}"],
-          "path": ["info"]
-        },
-        "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
-      },
-      "response": []
-    },
-    {
-      "name": "Update data",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Successful PUT request\", function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
-              "});",
-              ""
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PUT",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "New Request",
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"aaaaaa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/test/:pk/",
+              "host": ["{{base_url}}"],
+              "path": ["test", ":pk", ""],
+              "variable": [
+                {
+                  "key": "pk",
+                  "value": "1"
+                }
+              ]
             }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base_url}}/info?id=1",
-          "host": ["{{base_url}}"],
-          "path": ["info"],
-          "query": [
-            {
-              "key": "id",
-              "value": "1"
-            }
-          ]
-        },
-        "description": "This is a PUT request and it is used to overwrite an existing piece of data. For instance, after you create an entity with a POST request, you may want to modify that later. You can do that using a PUT request. You typically identify the entity being updated by including an identifier in the URL (eg. `id=1`).\n\nA successful PUT request typically returns a `200 OK`, `201 Created`, or `204 No Content` response code."
-      },
-      "response": []
-    },
-    {
-      "name": "Delete data",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Successful DELETE request\", function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 202, 204]);",
-              "});",
-              ""
-            ]
-          }
+          "name": "detail",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/test/:pk/?some_filter=123",
+              "host": ["{{base_url}}"],
+              "path": ["test", ":pk", ""],
+              "query": [
+                {
+                  "key": "some_filter",
+                  "value": "123"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "pk",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"aaa\",\n    \"age\": 20,\n    \"date\": \"2026-11-11\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/test/:pk/",
+              "host": ["{{base_url}}"],
+              "path": ["test", ":pk", ""],
+              "variable": [
+                {
+                  "key": "pk",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
         }
-      ],
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/info?id=1",
-          "host": ["{{base_url}}"],
-          "path": ["info"],
-          "query": [
-            {
-              "key": "id",
-              "value": "1"
-            }
-          ]
-        },
-        "description": "This is a DELETE request, and it is used to delete data that was previously created via a POST request. You typically identify the entity being updated by including an identifier in the URL (eg. `id=1`).\n\nA successful DELETE request typically returns a `200 OK`, `202 Accepted`, or `204 No Content` response code."
-      },
-      "response": []
+      ]
     }
   ],
   "event": [
