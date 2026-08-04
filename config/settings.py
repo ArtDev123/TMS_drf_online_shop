@@ -11,9 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-from pathlib import Path
 
+from datetime import timedelta
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
@@ -47,6 +48,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    'rest_framework_simplejwt',
+    "accounts",
     "core"
 ]
 
@@ -114,13 +117,26 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# REST_FRAMEWORK = {
+#     "DEFAULT_PERMISSION_CLASSES": [
+#         "rest_framework.permissions.AllowAny",
+#     ],
+#     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+#     "PAGE_SIZE": 20,
+# }
+
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # удобно для browsable API / admin
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
 }
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -139,3 +155,10 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 APPEND_SLASH = False
+
+AUTH_USER_MODEL = 'accounts.User'
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
