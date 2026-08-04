@@ -8,7 +8,6 @@ from .models import TestModel
 from .serializers import EchoSerializer, TestSerializer
 
 
-
 class HealthView(APIView):
     def get(self, request):
         return Response(

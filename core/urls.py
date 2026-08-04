@@ -4,9 +4,8 @@ from rest_framework.routers import DefaultRouter
 
 from .views import EchoView, HealthView, TestModelViewSet
 
-
 router = DefaultRouter()
-router.register(r'test', TestModelViewSet, basename='test')
+router.register(r"test", TestModelViewSet, basename="test")
 
 urlpatterns = [
     path("health/", HealthView.as_view(), name="health"),
