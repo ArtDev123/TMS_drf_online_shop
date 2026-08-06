@@ -12,8 +12,8 @@
 | 1 | [step-01-env.md](step-01-env.md) | venv, requirements, PostgreSQL, Django-проект | окружение |
 | 2 | [step-02-drf-basics.md](step-02-drf-basics.md) | Первый endpoint | **URL, Serializer, APIView** (читать целиком) |
 | 3 | [step-03-users-roles.md](step-03-users-roles.md) | User, роли, JWT, permissions | auth vs permission в цикле view |
-| 4 | [step-04-products-models.md](step-04-products-models.md) | Модели Product (+ admin) | Decimal / ORM |
-| 5 | [step-05-products-api.md](step-05-products-api.md) | CRUD товаров (менеджер) | **ModelSerializer, ViewSet, Router** |
+| 4 | [step-04-products-models.md](step-04-products-models.md) | Модели Category + Product (+ admin) | Decimal / ORM / FK |
+| 5 | [step-05-products-api.md](step-05-products-api.md) | CRUD категорий и товаров (менеджер) | **ModelSerializer, ViewSet, Router** |
 | 6 | [step-06-catalog-public.md](step-06-catalog-public.md) | Публичный GET для гостя | `get_permissions` / `get_queryset` / `self.action` |
 | 7 | [step-07-registration-email.md](step-07-registration-email.md) | Регистрация + подтверждение email | CreateAPIView + serializer.create |
 | 8 | [step-08-cart.md](step-08-cart.md) | Корзина: добавить / удалить / qty | ViewSet + `@action`, вложенные URL |
@@ -38,7 +38,7 @@
 |-----------|--------|
 | Django + DRF + PostgreSQL | ❌ шаг 1–2 |
 | User / роли / JWT | ❌ шаг 3 |
-| Products API | ❌ шаги 4–6 |
+| Catalog API (категории + товары) | ❌ шаги 4–6 |
 | Регистрация + email | ❌ шаг 7 |
 | Корзина | ❌ шаг 8 |
 | Скидки + промокоды + pricing | ❌ шаги 9–11 |

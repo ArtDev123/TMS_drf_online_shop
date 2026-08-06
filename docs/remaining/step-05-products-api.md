@@ -1,19 +1,25 @@
-# Шаг 5 — API товаров для менеджера (ViewSet + Router)
+# Шаг 5 — API категорий и товаров для менеджера (ViewSet + Router)
 
 **Предыдущий:** [step-04-products-models.md](step-04-products-models.md) · **Следующий:** [step-06-catalog-public.md](step-06-catalog-public.md)
 
 ## Задача
 
-Менеджер магазина может **просматривать, создавать, редактировать и удалять** товары через REST API. Это прямой пункт ТЗ.
+Менеджер магазина может **просматривать, создавать, редактировать и удалять** категории и товары через REST API. Это прямой пункт ТЗ.
 
-На этом шаге весь ViewSet защитим `IsManager`. Публичное чтение для гостя откроем на шаге 6 через `get_permissions()`.
+На этом шаге оба ViewSet защитим `IsManager`. Публичное чтение для гостя откроем на шаге 6 через `get_permissions()`.
 
 ---
 
 ## Теория: ModelSerializer + ModelViewSet + Router
 
 ```text
-Product  ←→  ProductSerializer  ←→  JSON
+Category  ←→  CategorySerializer  ←→  JSON
+                ↑
+         CategoryViewSet
+                ↑
+         DefaultRouter → /api/categories/
+
+Product   ←→  ProductSerializer   ←→  JSON
                 ↑
          ProductViewSet
                 ↑
@@ -271,13 +277,14 @@ ProductSerializer(queryset, many=True).data
 
 ```python
 router = DefaultRouter()
+router.register('categories', CategoryViewSet, basename='category')
 router.register('products', ProductViewSet, basename='product')
 urlpatterns = router.urls
 ```
 
 | Аргумент | Смысл |
 |----------|--------|
-| `'products'` | префикс URL (без слэшей по краям) |
+| `'products'` / `'categories'` | префикс URL (без слэшей по краям) |
 | `ProductViewSet` | класс (не экземпляр!) |
 | `basename='product'` | префикс имён: `product-list`, `product-detail` |
 
@@ -288,6 +295,8 @@ urlpatterns = router.urls
 После `path('api/', include(router.urls))`:
 
 ```text
+GET/POST          /api/categories/
+GET/PUT/PATCH/DELETE  /api/categories/<pk>/
 GET/POST          /api/products/
 GET/PUT/PATCH/DELETE  /api/products/<pk>/
 GET               /api/                 ← только DefaultRouter: каталог эндпоинтов
@@ -296,6 +305,7 @@ GET               /api/                 ← только DefaultRouter: ката
 Имена для `reverse`:
 
 ```python
+reverse('category-list')
 reverse('product-list')                 # /api/products/
 reverse('product-detail', kwargs={'pk': 1})  # /api/products/1/
 ```
@@ -310,6 +320,7 @@ config/urls.py
         │
         ▼
 catalog/urls.py
+  router.register('categories', CategoryViewSet)
   router.register('products', ProductViewSet)
   urlpatterns = router.urls
         │
@@ -365,12 +376,27 @@ for p in get_resolver().url_patterns:
 
 ---
 
-## 1. Serializer — `catalog/serializers.py`
+## 1. Serializers — `catalog/serializers.py`
 
 ```python
 from rest_framework import serializers
 
-from .models import Product
+from .models import Category, Product
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'name',
+            'slug',
+            'description',
+            'is_active',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -378,6 +404,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             'id',
+            'category',
             'name',
             'slug',
             'description',
@@ -399,6 +426,7 @@ class ProductSerializer(serializers.ModelSerializer):
 **Разбор (привязка к теории выше):**
 
 - `ModelSerializer` сам строит поля по модели и умеет `.create()` / `.update()` — ViewSet вызовет `serializer.save()` за вас.
+- `category` в JSON — id категории (`1`, `2`, …); DRF сам резолвит FK.
 - `fields = (…)`, не `__all__` — явный контракт JSON для фронта/Postman.
 - `read_only_fields` — клиент не подделает `id` и timestamps в POST/PATCH.
 - `validate_price` — шаг 2 цепочки валидации (после приведения типа поля, до `validate()`).
@@ -409,21 +437,36 @@ class ProductSerializer(serializers.ModelSerializer):
 ```bash
 python manage.py shell -c "
 from catalog.serializers import ProductSerializer
-s = ProductSerializer(data={'name': 'X', 'slug': 'x', 'price': '-1', 'stock': 1})
+s = ProductSerializer(data={
+    'category': 1, 'name': 'X', 'slug': 'x', 'price': '-1', 'stock': 1,
+})
 print(s.is_valid(), s.errors)
 "
 ```
 
 ---
 
-## 2. ViewSet — `catalog/views.py`
+## 2. ViewSets — `catalog/views.py`
 
 ```python
 from rest_framework import viewsets
 
 from accounts.permissions import IsManager
-from .models import Product
-from .serializers import ProductSerializer
+from .models import Category, Product
+from .serializers import CategorySerializer, ProductSerializer
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    """
+    CRUD категорий.
+    Пока весь набор действий — только для менеджера.
+    На шаге 6 откроем list/retrieve для всех.
+    """
+
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsManager]
+    lookup_field = 'pk'
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -433,7 +476,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     На шаге 6 откроем list/retrieve для всех.
     """
 
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer
     permission_classes = [IsManager]
     lookup_field = 'pk'  # можно сменить на 'slug'
@@ -441,7 +484,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 **Разбор:**
 
-- Четыре строки вместо шести `APIView` + ручных `path` — смысл ViewSet.
+- Два ViewSet — два ресурса; один Router зарегистрирует оба.
+- `select_related('category')` — без N+1 при list товаров.
 - `queryset` — источник для `list`/`get_object`; на шаге 6 сузим через `get_queryset()`.
 - `serializer_class` — один на все actions; позже можно `get_serializer_class()` (короткий список для гостя).
 - `permission_classes = [IsManager]` — **все** actions закрыты; без токена обычно **401**, с токеном клиента — **403**.
@@ -465,9 +509,10 @@ ProductViewSet.as_view({
 ```python
 from rest_framework.routers import DefaultRouter
 
-from .views import ProductViewSet
+from .views import CategoryViewSet, ProductViewSet
 
 router = DefaultRouter()
+router.register('categories', CategoryViewSet, basename='category')
 router.register('products', ProductViewSet, basename='product')
 
 urlpatterns = router.urls
@@ -478,6 +523,8 @@ urlpatterns = router.urls
 ```python
 path('api/', include('catalog.urls')),
 ```
+
+`select_related` уже в queryset ViewSet — при list товаров категория подгружается одним JOIN.
 
 рядом с уже существующим `path('api/', include('core.urls'))` — Django склеит оба include. Либо соберите один `api_urlpatterns`.
 
@@ -522,20 +569,35 @@ TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/token/ \
 echo "$TOKEN"
 ```
 
-Список:
+Список категорий и товаров:
 
 ```bash
+curl -s http://127.0.0.1:8000/api/categories/ \
+  -H "Authorization: Bearer $TOKEN" | python -m json.tool
+
 curl -s http://127.0.0.1:8000/api/products/ \
   -H "Authorization: Bearer $TOKEN" | python -m json.tool
 ```
 
-Создание:
+Создание категории, затем товара:
 
 ```bash
+curl -s -X POST http://127.0.0.1:8000/api/categories/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Посуда",
+    "slug": "dishes",
+    "description": "",
+    "is_active": true
+  }' | python -m json.tool
+
+# подставьте id категории из ответа (например 3)
 curl -s -X POST http://127.0.0.1:8000/api/products/ \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
+    "category": 3,
     "name": "Кружка",
     "slug": "mug-white",
     "description": "Белая керамика",
@@ -593,10 +655,12 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/api/products/
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
 | ☐ | GET `/api/products/` без токена | 401 |
-| ☐ | GET с токеном менеджера | 200, список / `results` |
-| ☐ | POST новый товар | 201, объект в ответе |
+| ☐ | GET `/api/categories/` с токеном менеджера | 200 |
+| ☐ | GET `/api/products/` с токеном менеджера | 200, список / `results` |
+| ☐ | POST новая категория | 201 |
+| ☐ | POST новый товар с `category` | 201, объект в ответе |
 | ☐ | PATCH цены | 200, цена обновилась |
-| ☐ | DELETE | 204 |
+| ☐ | DELETE товара | 204 |
 | ☐ | Токен клиента (если уже есть) на POST | 403 |
 
 ---
@@ -606,7 +670,8 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/api/products/
 | Что | Файл | Проверка |
 |-----|------|----------|
 | Список без токена | `tests/test_products_api.py` | 401 (пока весь ViewSet = IsManager) |
-| CRUD менеджером | там же | POST 201, PATCH 200, DELETE 204 |
+| CRUD категории менеджером | там же | POST 201 |
+| CRUD товара менеджером | там же | POST 201 (с `category`), PATCH 200, DELETE 204 |
 | Клиент не создаёт | там же | POST → 403 |
 | Валидация цены | `tests/test_product_serializer.py` | `price <= 0` → invalid |
 
@@ -644,17 +709,36 @@ def client_api(client_user):
 # tests/test_products_api.py
 from decimal import Decimal
 import pytest
-from catalog.models import Product
+from catalog.models import Category, Product
+
+
+@pytest.fixture
+def category(db):
+    return Category.objects.create(name='Посуда', slug='dishes')
 
 
 @pytest.mark.django_db
 def test_list_requires_auth(api):
     assert api.get('/api/products/').status_code == 401
+    assert api.get('/api/categories/').status_code == 401
 
 
 @pytest.mark.django_db
-def test_manager_crud(manager_api):
+def test_manager_category_crud(manager_api):
+    r = manager_api.post('/api/categories/', {
+        'name': 'Посуда',
+        'slug': 'dishes',
+        'description': '',
+        'is_active': True,
+    }, format='json')
+    assert r.status_code == 201
+    assert r.data['slug'] == 'dishes'
+
+
+@pytest.mark.django_db
+def test_manager_product_crud(manager_api, category):
     r = manager_api.post('/api/products/', {
+        'category': category.pk,
         'name': 'Кружка',
         'slug': 'mug',
         'description': '',
@@ -664,6 +748,7 @@ def test_manager_crud(manager_api):
     }, format='json')
     assert r.status_code == 201
     pk = r.data['id']
+    assert r.data['category'] == category.pk
 
     r = manager_api.patch(f'/api/products/{pk}/', {'price': '11.00'}, format='json')
     assert r.status_code == 200
@@ -675,8 +760,9 @@ def test_manager_crud(manager_api):
 
 
 @pytest.mark.django_db
-def test_client_cannot_create(client_api):
+def test_client_cannot_create(client_api, category):
     r = client_api.post('/api/products/', {
+        'category': category.pk,
         'name': 'X', 'slug': 'x', 'price': '1.00', 'stock': 1, 'is_active': True,
     }, format='json')
     assert r.status_code == 403

@@ -99,12 +99,18 @@ python manage.py migrate
 Admin:
 
 ```python
-from .models import Product, ProductDiscount
+from .models import Category, Product, ProductDiscount
 
 
 class ProductDiscountInline(admin.TabularInline):
     model = ProductDiscount
     extra = 0
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    # ... как было на шаге 4
+    pass
 
 
 @admin.register(Product)
@@ -211,7 +217,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'slug', 'description', 'price',
+            'id', 'category', 'name', 'slug', 'description', 'price',
             'effective_price', 'discount',
             'stock', 'is_active', 'image', 'created_at', 'updated_at',
         )
@@ -271,13 +277,19 @@ curl -s http://127.0.0.1:8000/api/products/1/ | python -m json.tool
 # tests/test_discounts.py
 from decimal import Decimal
 import pytest
-from catalog.models import Product, ProductDiscount, DiscountType
+from catalog.models import Category, Product, ProductDiscount, DiscountType
 from catalog.services import get_effective_unit_price
 
 
+@pytest.fixture
+def category(db):
+    return Category.objects.create(name='C', slug='c')
+
+
 @pytest.mark.django_db
-def test_percent_discount_math():
+def test_percent_discount_math(category):
     p = Product.objects.create(
+        category=category,
         name='P', slug='p', price=Decimal('100.00'), stock=1, is_active=True,
     )
     d = ProductDiscount.objects.create(
@@ -288,8 +300,9 @@ def test_percent_discount_math():
 
 
 @pytest.mark.django_db
-def test_no_discount_effective_equals_price():
+def test_no_discount_effective_equals_price(category):
     p = Product.objects.create(
+        category=category,
         name='P2', slug='p2', price=Decimal('15.00'), stock=1, is_active=True,
     )
     assert get_effective_unit_price(p) == p.price
@@ -299,12 +312,14 @@ def test_no_discount_effective_equals_price():
 # tests/test_discounts_api.py
 from decimal import Decimal
 import pytest
-from catalog.models import Product
+from catalog.models import Category, Product
 
 
 @pytest.mark.django_db
 def test_manager_creates_discount(manager_api, api):
+    cat = Category.objects.create(name='C', slug='c-disc')
     p = Product.objects.create(
+        category=cat,
         name='P', slug='disc', price=Decimal('50.00'), stock=2, is_active=True,
     )
     r = manager_api.post('/api/discounts/', {

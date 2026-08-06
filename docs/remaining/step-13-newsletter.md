@@ -237,7 +237,7 @@ python manage.py send_weekly_discounts
 from decimal import Decimal
 import pytest
 from django.core import mail
-from catalog.models import Product, ProductDiscount, DiscountType
+from catalog.models import Category, Product, ProductDiscount, DiscountType
 from promotions.models import NewsletterSubscription
 from promotions.services.newsletter import send_weekly_discounts
 
@@ -256,6 +256,7 @@ def test_weekly_send_only_active_subscribers(client_user, settings):
     settings.EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
     NewsletterSubscription.objects.create(user=client_user, is_active=True)
     p = Product.objects.create(
+        category=Category.objects.create(name='C', slug='c-nl'),
         name='P', slug='nl', price=Decimal('100'), stock=1, is_active=True,
     )
     ProductDiscount.objects.create(

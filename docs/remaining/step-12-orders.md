@@ -372,7 +372,7 @@ from datetime import timedelta
 from unittest.mock import patch
 import pytest
 from django.utils import timezone
-from catalog.models import Product
+from catalog.models import Category, Product
 from cart.models import Cart, CartItem
 from orders.models import Order
 
@@ -380,7 +380,9 @@ from orders.models import Order
 @pytest.mark.django_db
 @patch('orders.services.schedule_delivery_notification')
 def test_create_order(mock_sched, client_api, client_user):
+    cat = Category.objects.create(name='C', slug='c-ord')
     product = Product.objects.create(
+        category=cat,
         name='P', slug='ord', price=Decimal('20.00'), stock=10, is_active=True,
     )
     cart = Cart.objects.create(user=client_user)
@@ -402,7 +404,9 @@ def test_create_order(mock_sched, client_api, client_user):
 
 @pytest.mark.django_db
 def test_order_past_delivery_rejected(client_api, client_user):
+    cat = Category.objects.create(name='C2', slug='c-ord2')
     product = Product.objects.create(
+        category=cat,
         name='P2', slug='ord2', price=Decimal('10.00'), stock=5, is_active=True,
     )
     cart = Cart.objects.create(user=client_user)

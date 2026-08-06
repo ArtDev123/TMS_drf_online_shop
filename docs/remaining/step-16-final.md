@@ -36,8 +36,8 @@
 |---|----------|---------------|
 | ☐ | 3 типа пользователей | гость без токена; client JWT; manager JWT |
 | ☐ | Данные клиента: имя, фамилия, email, телефон | register + admin / `User` |
-| ☐ | Менеджер CRUD товаров | POST/PATCH/DELETE `/api/products/` |
-| ☐ | Гость смотрит товары | GET `/api/products/` без Authorization |
+| ☐ | Менеджер CRUD категорий и товаров | POST/PATCH/DELETE `/api/categories/`, `/api/products/` |
+| ☐ | Гость смотрит каталог | GET `/api/categories/`, `/api/products/` без Authorization |
 | ☐ | Клиент смотрит и кладёт в корзину | GET products + POST `/api/cart/items/` |
 | ☐ | Клиент удаляет из корзины | DELETE `/api/cart/items/{id}/` |
 | ☐ | Скидки на товары менеджером | POST `/api/discounts/`, `effective_price` |
@@ -62,7 +62,7 @@
 ## 4. Сквозной сценарий (30 минут)
 
 1. Поднять: Postgres, Redis, `runserver`, `celery worker`, `celery beat`.
-2. Войти менеджером → создать 2 товара → скидку 20% на один → промокоды STACK/NOSUM → settings `percent=5`, `X=30`.
+2. Войти менеджером → создать категорию + 2 товара → скидку 20% на один → промокоды STACK/NOSUM → settings `percent=5`, `X=30`.
 3. Зарегистрировать клиента → confirm из консоли → JWT.
 4. Гостем открыть каталог (без токена).
 5. Клиентом: 2 позиции в корзину, изменить qty, preview с STACK10.
@@ -102,7 +102,7 @@ TMS_drf_online_shop/
 │   ├── celery.py
 │   └── __init__.py
 ├── accounts/          # User, JWT, wallet, register
-├── catalog/           # Product, ProductDiscount
+├── catalog/           # Category, Product, ProductDiscount
 ├── cart/              # Cart, CartItem
 ├── orders/            # Order, tasks напоминания
 ├── promotions/        # PromoCode, Newsletter, ShopSettings, pricing

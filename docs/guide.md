@@ -17,8 +17,8 @@
 |---------------|------|---------------|
 | 3 типа пользователей: клиент, незарегистрированный, менеджер | все | `accounts` + permissions |
 | Данные клиента: имя, фамилия, email, телефон | клиент | `accounts.User` / `ClientProfile` |
-| CRUD товаров | менеджер | `catalog` ViewSet |
-| Просмотр товаров | гость + клиент | `GET /api/products/` |
+| CRUD категорий и товаров | менеджер | `catalog` ViewSet |
+| Просмотр каталога | гость + клиент | `GET /api/categories/`, `GET /api/products/` |
 | Корзина: добавить / удалить | клиент | `cart` |
 | Скидки на отдельные товары | менеджер | `catalog.ProductDiscount` |
 | Подписка на рассылку скидок (1 раз/неделю) | клиент | `promotions` + Celery Beat |
@@ -45,10 +45,10 @@
 |-----|-----------------|-----------|
 | **Незарегистрированный (гость)** | `request.user.is_anonymous` | Только `GET` каталога |
 | **Клиент** | User с ролью `CLIENT`, email подтверждён | Каталог, корзина, заказ, подписка, кэшбэк |
-| **Менеджер магазина** | User с ролью `MANAGER` (или `is_staff` + группа) | CRUD товаров, скидки, промокоды, настройки кэшбэка |
+| **Менеджер магазина** | User с ролью `MANAGER` (или `is_staff` + группа) | CRUD категорий/товаров, скидки, промокоды, настройки кэшбэка |
 
 ```text
-Гость ──GET──► /api/products/
+Гость ──GET──► /api/categories/, /api/products/
 Клиент ──JWT──► /api/cart/, /api/orders/, /api/newsletter/
 Менеджер ──JWT──► /api/products/ (POST/PUT/DELETE), /api/discounts/, /api/promo-codes/, /api/settings/
 ```
@@ -72,9 +72,10 @@ User (role: CLIENT | MANAGER)
   │     └── notify_before (1d | 6h | 1h)
   └── NewsletterSubscription
 
-Product
-  ├── price, name, description, is_active
-  └── ProductDiscount (percent | amount, active, dates)
+Category
+  └── Product (FK)
+        ├── price, name, description, is_active
+        └── ProductDiscount (percent | amount, active, dates)
 
 PromoCode
   ├── code, percent/amount, is_active
@@ -138,8 +139,10 @@ URL (path / include / Router) → APIView или ViewSet → Serializer → JSON
 | POST | `/auth/register/` | гость | регистрация |
 | POST | `/auth/confirm-email/` | гость | подтверждение |
 | POST | `/auth/token/` | клиент/менеджер | получить JWT |
-| GET | `/products/` | все | список товаров |
-| POST/PUT/PATCH/DELETE | `/products/`… | менеджер | CRUD |
+| GET | `/categories/` | все | список категорий |
+| POST/PUT/PATCH/DELETE | `/categories/`… | менеджер | CRUD категорий |
+| GET | `/products/` | все | список товаров (опц. `?category=`) |
+| POST/PUT/PATCH/DELETE | `/products/`… | менеджер | CRUD товаров |
 | GET/POST/PATCH/DELETE | `/cart/`… | клиент | корзина |
 | GET/POST/PUT/DELETE | `/discounts/` | менеджер | скидки на товары |
 | GET/POST… | `/promo-codes/` | менеджер | промокоды |
@@ -188,7 +191,7 @@ TMS_drf_online_shop/
 ├── requirements.txt
 ├── config/                 # settings, urls, celery
 ├── accounts/               # User, регистрация, JWT, wallet
-├── catalog/                # Product, ProductDiscount
+├── catalog/                # Category, Product, ProductDiscount
 ├── cart/                   # Cart, CartItem
 ├── orders/                 # Order, OrderItem, уведомления
 ├── promotions/             # PromoCode, Newsletter, ShopSettings
@@ -206,8 +209,8 @@ TMS_drf_online_shop/
 | 1 | [step-01-env.md](remaining/step-01-env.md) | venv, пакеты, PostgreSQL, startproject |
 | 2 | [step-02-drf-basics.md](remaining/step-02-drf-basics.md) | Теория DRF + «Hello API» |
 | 3 | [step-03-users-roles.md](remaining/step-03-users-roles.md) | User, роли, JWT, permissions |
-| 4 | [step-04-products-models.md](remaining/step-04-products-models.md) | Модели товаров |
-| 5 | [step-05-products-api.md](remaining/step-05-products-api.md) | CRUD товаров для менеджера |
+| 4 | [step-04-products-models.md](remaining/step-04-products-models.md) | Модели Category + Product |
+| 5 | [step-05-products-api.md](remaining/step-05-products-api.md) | CRUD категорий и товаров для менеджера |
 | 6 | [step-06-catalog-public.md](remaining/step-06-catalog-public.md) | Публичный каталог для гостя |
 | 7 | [step-07-registration-email.md](remaining/step-07-registration-email.md) | Регистрация + confirm email |
 | 8 | [step-08-cart.md](remaining/step-08-cart.md) | Корзина: add/remove/qty |

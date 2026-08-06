@@ -357,14 +357,16 @@ curl -s -X POST http://127.0.0.1:8000/api/checkout/preview/ \
 # tests/test_pricing.py
 from decimal import Decimal
 import pytest
-from catalog.models import Product, ProductDiscount, DiscountType
+from catalog.models import Category, Product, ProductDiscount, DiscountType
 from promotions.models import PromoCode, PromoDiscountType
 from promotions.services import LineInput, calculate_checkout
 
 
 @pytest.fixture
 def product_100(db):
+    cat = Category.objects.create(name='C', slug='c-price')
     p = Product.objects.create(
+        category=cat,
         name='P', slug='p100', price=Decimal('100.00'), stock=10, is_active=True,
     )
     ProductDiscount.objects.create(

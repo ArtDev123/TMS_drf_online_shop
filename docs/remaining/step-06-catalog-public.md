@@ -4,13 +4,13 @@
 
 ## Задача
 
-Незарегистрированный клиент может **просматривать** товары. Клиент (с токеном) тоже. Создавать/менять/удалять — по-прежнему только менеджер.
+Незарегистрированный клиент может **просматривать** категории и товары. Клиент (с токеном) тоже. Создавать/менять/удалять — по-прежнему только менеджер.
 
 ---
 
 ## Теория: разные permissions на разные actions
 
-На шаге 5 весь `ProductViewSet` закрыт одним списком:
+На шаге 5 оба ViewSet (`CategoryViewSet`, `ProductViewSet`) закрыты одним списком:
 
 ```python
 permission_classes = [IsManager]  # на ВСЕ actions одинаково
@@ -114,7 +114,7 @@ def get_serializer_class(self):
 
 ---
 
-## 1. Обновить `ProductViewSet`
+## 1. Обновить `CategoryViewSet` и `ProductViewSet`
 
 `catalog/views.py`:
 
@@ -123,12 +123,13 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 
 from accounts.permissions import IsManager
-from .models import Product
-from .serializers import ProductSerializer
+from .models import Category, Product
+from .serializers import CategorySerializer, ProductSerializer
 
 
-class ProductViewSet(viewsets.ModelViewSet):
-    serializer_class = ProductSerializer
+class CategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
@@ -136,43 +137,53 @@ class ProductViewSet(viewsets.ModelViewSet):
         return [IsManager()]
 
     def get_queryset(self):
-        qs = Product.objects.all()
+        qs = Category.objects.all()
         user = self.request.user
-        # менеджер видит всё, включая скрытые
         if user.is_authenticated and getattr(user, 'is_manager', False):
             return qs
         return qs.filter(is_active=True)
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    serializer_class = ProductSerializer
+    queryset = Product.objects.select_related('category').all()
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [AllowAny()]
+        return [IsManager()]
+
+    def get_queryset(self):
+        qs = Product.objects.select_related('category').all()
+        user = self.request.user
+        # менеджер видит всё, включая скрытые
+        if not (user.is_authenticated and getattr(user, 'is_manager', False)):
+            qs = qs.filter(is_active=True, category__is_active=True)
+
+        category = self.request.query_params.get('category')
+        if category:
+            qs = qs.filter(category_id=category)
+        return qs
 ```
 
-Уберите классовый `queryset = …` **или** оставьте его для router basename / schema, но всегда перекрывайте через `get_queryset`. Рекомендация DRF: задать `queryset` для роутера и всё равно переопределить:
+Уберите классовый `queryset = …` **или** оставьте его для router basename / schema, но всегда перекрывайте через `get_queryset`. Рекомендация DRF: задать `queryset` для роутера и всё равно переопределить.
 
-```python
-queryset = Product.objects.all()
-```
+Фильтр `?category=1` — товары одной категории. Гость не видит товары из скрытых категорий (`category__is_active=True`).
 
 ---
 
 ## 2. (Опционально) поиск и фильтр цены
 
-Установите при желании `django-filter` — или сделайте простой query-param вручную:
+Установите при желании `django-filter` — или сделайте простой query-param вручную в `ProductViewSet.get_queryset` (после фильтра по роли):
 
 ```python
-def get_queryset(self):
-    qs = super().get_queryset() if hasattr(super(), 'get_queryset') else Product.objects.all()
-    # перепишите целиком как выше + :
-    user = self.request.user
-    if user.is_authenticated and getattr(user, 'is_manager', False):
-        qs = Product.objects.all()
-    else:
-        qs = Product.objects.filter(is_active=True)
-
-    search = self.request.query_params.get('search')
-    if search:
-        qs = qs.filter(name__icontains=search)
-    return qs
+search = self.request.query_params.get('search')
+if search:
+    qs = qs.filter(name__icontains=search)
+return qs
 ```
 
-Пример: `GET /api/products/?search=чай`
+Пример: `GET /api/products/?search=чай` · `GET /api/products/?category=1`
 
 ---
 
@@ -184,7 +195,7 @@ def get_queryset(self):
 class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('id', 'name', 'slug', 'description', 'price', 'image')
+        fields = ('id', 'category', 'name', 'slug', 'description', 'price', 'image')
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -206,7 +217,9 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 ```bash
 # гость
+curl -s http://127.0.0.1:8000/api/categories/ | python -m json.tool
 curl -s http://127.0.0.1:8000/api/products/ | python -m json.tool
+curl -s 'http://127.0.0.1:8000/api/products/?category=1' | python -m json.tool
 
 # спрятать товар в admin (is_active=False) и снова GET без токена —
 # товара не должно быть в results
@@ -214,13 +227,15 @@ curl -s http://127.0.0.1:8000/api/products/ | python -m json.tool
 # POST гостем
 curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8000/api/products/ \
   -H 'Content-Type: application/json' \
-  -d '{"name":"X","slug":"x","price":"1.00"}'
+  -d '{"category":1,"name":"X","slug":"x","price":"1.00"}'
 # 401
 ```
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
-| ☐ | GET без токена | 200, активные товары |
+| ☐ | GET `/api/categories/` без токена | 200, активные категории |
+| ☐ | GET `/api/products/` без токена | 200, активные товары |
+| ☐ | GET `?category=<id>` | только товары этой категории |
 | ☐ | Товар с `is_active=False` | не виден гостю |
 | ☐ | Менеджер с токеном GET | видит и неактивные |
 | ☐ | POST без токена | 401 |
@@ -234,8 +249,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8000/api/produ
 
 | Что | Файл | Проверка |
 |-----|------|----------|
-| Гость list | `tests/test_catalog_public.py` | GET → 200 |
+| Гость list категорий/товаров | `tests/test_catalog_public.py` | GET → 200 |
 | Скрытый товар | там же | `is_active=False` не в `results` |
+| Фильтр `?category=` | там же | только нужная категория |
 | Гость retrieve скрытого | там же | 404 |
 | Менеджер видит скрытый | там же | 200 |
 | Гость POST | там же | 401 |
@@ -245,21 +261,36 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8000/api/produ
 # tests/test_catalog_public.py
 from decimal import Decimal
 import pytest
-from catalog.models import Product
+from catalog.models import Category, Product
 
 
 @pytest.fixture
-def active_product(db):
+def category(db):
+    return Category.objects.create(name='Витрина', slug='vitrina-cat')
+
+
+@pytest.fixture
+def active_product(category):
     return Product.objects.create(
+        category=category,
         name='Витрина', slug='vitrina', price=Decimal('5.00'), stock=3, is_active=True,
     )
 
 
 @pytest.fixture
-def hidden_product(db):
+def hidden_product(category):
     return Product.objects.create(
+        category=category,
         name='Скрытый', slug='hidden', price=Decimal('5.00'), stock=3, is_active=False,
     )
+
+
+@pytest.mark.django_db
+def test_guest_sees_categories(api, category):
+    r = api.get('/api/categories/')
+    assert r.status_code == 200
+    ids = [row['id'] for row in r.data['results']]
+    assert category.id in ids
 
 
 @pytest.mark.django_db
@@ -269,6 +300,17 @@ def test_guest_sees_active(api, active_product, hidden_product):
     ids = [row['id'] for row in r.data['results']]
     assert active_product.id in ids
     assert hidden_product.id not in ids
+
+
+@pytest.mark.django_db
+def test_filter_by_category(api, active_product, category):
+    other = Category.objects.create(name='Другая', slug='other')
+    Product.objects.create(
+        category=other, name='Y', slug='y', price=Decimal('1.00'), stock=1,
+    )
+    r = api.get(f'/api/products/?category={category.id}')
+    assert all(row['category'] == category.id for row in r.data['results'])
+    assert active_product.id in [row['id'] for row in r.data['results']]
 
 
 @pytest.mark.django_db
@@ -282,8 +324,9 @@ def test_manager_sees_hidden(manager_api, hidden_product):
 
 
 @pytest.mark.django_db
-def test_guest_cannot_post(api):
+def test_guest_cannot_post(api, category):
     r = api.post('/api/products/', {
+        'category': category.pk,
         'name': 'X', 'slug': 'x2', 'price': '1.00', 'stock': 1, 'is_active': True,
     }, format='json')
     assert r.status_code in (401, 403)
