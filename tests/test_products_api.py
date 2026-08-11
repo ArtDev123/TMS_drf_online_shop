@@ -4,11 +4,11 @@ import pytest
 from catalog.models import Category, Product
 from unittest.mock import MagicMock
 
-mock_image = MagicMock()
-mock_image.name = 'test_avatar.jpg' 
-mock_image.size = 1024 # Размер в байтах 
-mock_image.read.return_value = b'fake_image_bytes' 
-mock_image.chunks.return_value = [b'fake_image_bytes']
+# mock_image = MagicMock()
+# mock_image.name = 'test_avatar.jpg' 
+# mock_image.size = 1024 # Размер в байтах 
+# mock_image.read.return_value = b'fake_image_bytes' 
+# mock_image.chunks.return_value = [b'fake_image_bytes']
 
 @pytest.fixture
 def category(db):
@@ -43,7 +43,7 @@ def test_manager_product_crud(manager_api, category):
         'price': '9.90',
         'stock': 10,
         'is_active': True,
-        'image' : mock_image
+        # 'image' : mock_image
     }, format='json')
     print(r.text)
     assert r.status_code == 201
