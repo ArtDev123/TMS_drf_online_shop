@@ -50,7 +50,7 @@ python -m pip install --upgrade pip
 
 ## 3. Установить зависимости
 
-Пока ставим минимум. Celery и Redis появятся на шагах 12–15; JWT — на шаге 3.
+Пока ставим минимум. JWT — на шаге 3; OpenAPI/Swagger — на шаге 7; Celery и Redis — на шаге 16.
 
 ```bash
 pip install "Django>=5.1,<6.1" djangorestframework psycopg2-binary python-dotenv Pillow
@@ -65,6 +65,7 @@ psycopg2-binary
 python-dotenv
 Pillow
 djangorestframework-simplejwt
+drf-spectacular
 celery
 redis
 django-celery-beat
@@ -86,6 +87,7 @@ pip install -r requirements.txt
 | `python-dotenv` | читать `.env` (секреты не в git) |
 | `Pillow` | `ImageField` для картинок товаров |
 | `djangorestframework-simplejwt` | access/refresh токены для клиента и менеджера |
+| `drf-spectacular` | OpenAPI-схема + Swagger UI (шаг 7) |
 | `celery` + `redis` | фоновые задачи: рассылка, напоминания о доставке |
 | `django-celery-beat` | расписание «раз в неделю» из админки/кода |
 
@@ -104,7 +106,7 @@ ALTER USER shop_user CREATEDB;
 
 Выполните (один раз):
 
-```bash
+
 mkdir -p scripts
 sudo -u postgres psql -v ON_ERROR_STOP=1 -f scripts/init_postgres.sql
 ```

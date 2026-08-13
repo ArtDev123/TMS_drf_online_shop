@@ -1,6 +1,6 @@
-# Шаг 16 — Финальный прогон по ТЗ
+# Шаг 17 — Финальный прогон по ТЗ
 
-**Предыдущий:** [step-15-celery-emails.md](step-15-celery-emails.md) · **Следующий:** —
+**Предыдущий:** [step-16-celery-emails.md](step-16-celery-emails.md) · **Следующий:** —
 
 ## Задача
 
@@ -85,7 +85,7 @@
 | Письма «не приходят» | смотрите не ту консоль | console backend пишет в процесс, где вызван send_mail (worker!) |
 | Celery задача молчит | нет worker / неверный `-A config` | проверить лог worker |
 | Неверная сумма | считают float / забыли effective_price | только Decimal + pricing service |
-| Промокод «не суммируется» странно | не прочитали правило min(A,B) | шаг 10–11 |
+| Промокод «не суммируется» странно | не прочитали правило min(A,B) | шаг 11–12 |
 
 ---
 
@@ -156,4 +156,4 @@ pytest --cov=accounts --cov=catalog --cov=cart --cov=orders --cov=promotions --c
 | ☐ | `test_catalog_public` — гость не видит скрытое | 200/404 |
 | ☐ | `test_cashback` — отказ при balance < X | ValueError / 400 |
 
-Дальше по желанию (вне ТЗ): OpenAPI/Spectacular, CORS + простой фронт, платежи.
+Дальше по желанию (вне ТЗ): CORS + простой фронт, платежи. Swagger уже на [шаге 7](step-07-swagger.md).

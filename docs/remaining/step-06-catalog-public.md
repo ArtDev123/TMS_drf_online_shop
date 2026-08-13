@@ -1,6 +1,6 @@
 # Шаг 6 — Публичный каталог для гостя
 
-**Предыдущий:** [step-05-products-api.md](step-05-products-api.md) · **Следующий:** [step-07-registration-email.md](step-07-registration-email.md)
+**Предыдущий:** [step-05-products-api.md](step-05-products-api.md) · **Следующий:** [step-07-swagger.md](step-07-swagger.md)
 
 ## Задача
 
@@ -337,4 +337,4 @@ pytest tests/test_catalog_public.py
 # удалите или поправьте устаревший test_list_requires_auth из шага 5
 ```
 
-**Все пункты отмечены?** → [step-07-registration-email.md](step-07-registration-email.md)
+**Все пункты отмечены?** → [step-07-swagger.md](step-07-swagger.md)

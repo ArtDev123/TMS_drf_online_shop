@@ -1,6 +1,6 @@
-# Шаг 14 — Кэшбэк: начисление и списание
+# Шаг 15 — Кэшбэк: начисление и списание
 
-**Предыдущий:** [step-13-newsletter.md](step-13-newsletter.md) · **Следующий:** [step-15-celery-emails.md](step-15-celery-emails.md)
+**Предыдущий:** [step-14-newsletter.md](step-14-newsletter.md) · **Следующий:** [step-16-celery-emails.md](step-16-celery-emails.md)
 
 ## Задача
 
@@ -329,4 +329,4 @@ def test_earn_and_spend(client_user):
 pytest tests/test_cashback.py tests/test_cashback_api.py
 ```
 
-**Все пункты отмечены?** → [step-15-celery-emails.md](step-15-celery-emails.md)
+**Все пункты отмечены?** → [step-16-celery-emails.md](step-16-celery-emails.md)

@@ -1,12 +1,12 @@
-# Шаг 13 — Подписка на рассылку скидок (раз в неделю)
+# Шаг 14 — Подписка на рассылку скидок (раз в неделю)
 
-**Предыдущий:** [step-12-orders.md](step-12-orders.md) · **Следующий:** [step-14-cashback.md](step-14-cashback.md)
+**Предыдущий:** [step-13-orders.md](step-13-orders.md) · **Следующий:** [step-15-cashback.md](step-15-cashback.md)
 
 ## Задача
 
 Клиент подписывается на email-рассылку и **раз в неделю** получает письмо об актуальных скидках на товары (`ProductDiscount`, которые сейчас активны).
 
-Фоновый запуск — Celery Beat (детали инфраструктуры — шаг 15). Здесь: модель подписки, API, задача «собрать скидки и разослать».
+Фоновый запуск — Celery Beat (детали инфраструктуры — шаг 16). Здесь: модель подписки, API, задача «собрать скидки и разослать».
 
 ---
 
@@ -25,7 +25,7 @@ Celery Worker              →  забирает задачу, шлёт пись
 python manage.py shell -c "from promotions.tasks import send_weekly_discounts; send_weekly_discounts()"
 ```
 
-На шаге 15 обернём в `@shared_task` и расписание.
+На шаге 16 обернём в `@shared_task` и расписание.
 
 ---
 
@@ -199,7 +199,7 @@ def send_weekly_discounts_task():
     return _send()
 ```
 
-Пока Celery не настроен, импорт `shared_task` упадёт — либо установите celery (шаг 1 requirements), либо временно закомментируйте декоратор и оставьте обычную функцию. На шаге 15 подключим Beat: `crontab(day_of_week='mon', hour=10, minute=0)`.
+Пока Celery не настроен, импорт `shared_task` упадёт — либо установите celery (шаг 1 requirements), либо временно закомментируйте декоратор и оставьте обычную функцию. На шаге 16 подключим Beat: `crontab(day_of_week='mon', hour=10, minute=0)`.
 
 ---
 
@@ -272,4 +272,4 @@ def test_weekly_send_only_active_subscribers(client_user, settings):
 pytest tests/test_newsletter.py
 ```
 
-**Все пункты отмечены?** → [step-14-cashback.md](step-14-cashback.md)
+**Все пункты отмечены?** → [step-15-cashback.md](step-15-cashback.md)

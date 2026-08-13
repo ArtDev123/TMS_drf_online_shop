@@ -1,6 +1,6 @@
-# Шаг 15 — Celery, Redis, почта: сводка фоновых задач
+# Шаг 16 — Celery, Redis, почта: сводка фоновых задач
 
-**Предыдущий:** [step-14-cashback.md](step-14-cashback.md) · **Следующий:** [step-16-final.md](step-16-final.md)
+**Предыдущий:** [step-15-cashback.md](step-15-cashback.md) · **Следующий:** [step-17-final.md](step-17-final.md)
 
 ## Задача
 
@@ -135,7 +135,7 @@ def send_delivery_reminder(order_id: int):
 
 
 def schedule_delivery_notification(order_id: int, notify_at):
-    """Заменить заглушку шага 12."""
+    """Заменить заглушку шага 13."""
     if notify_at <= timezone.now():
         send_delivery_reminder.delay(order_id)
     else:
@@ -148,7 +148,7 @@ def schedule_delivery_notification(order_id: int, notify_at):
 
 ## 4. Задача рассылки
 
-`promotions/tasks.py` (как на шаге 13, финально):
+`promotions/tasks.py` (как на шаге 14, финально):
 
 ```python
 from celery import shared_task
@@ -294,4 +294,4 @@ def test_schedule_future_uses_eta(client_user):
 pytest tests/test_celery_tasks.py
 ```
 
-**Все пункты отмечены?** → [step-16-final.md](step-16-final.md)
+**Все пункты отмечены?** → [step-17-final.md](step-17-final.md)

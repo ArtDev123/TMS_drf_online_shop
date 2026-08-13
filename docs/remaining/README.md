@@ -15,42 +15,44 @@
 | 4 | [step-04-products-models.md](step-04-products-models.md) | Модели Category + Product (+ admin) | Decimal / ORM / FK |
 | 5 | [step-05-products-api.md](step-05-products-api.md) | CRUD категорий и товаров (менеджер) | **ModelSerializer, ViewSet, Router** |
 | 6 | [step-06-catalog-public.md](step-06-catalog-public.md) | Публичный GET для гостя | `get_permissions` / `get_queryset` / `self.action` |
-| 7 | [step-07-registration-email.md](step-07-registration-email.md) | Регистрация + подтверждение email | CreateAPIView + serializer.create |
-| 8 | [step-08-cart.md](step-08-cart.md) | Корзина: добавить / удалить / qty | ViewSet + `@action`, вложенные URL |
-| 9 | [step-09-product-discounts.md](step-09-product-discounts.md) | Скидки на товары | вложенные serializer fields |
-| 10 | [step-10-promo-codes.md](step-10-promo-codes.md) | Промокоды и флаг суммирования | lookup_field=code |
-| 11 | [step-11-pricing-service.md](step-11-pricing-service.md) | Сервис расчёта итоговой суммы | service layer vs views |
-| 12 | [step-12-orders.md](step-12-orders.md) | Заказ + уведомление о доставке | ReadOnlyModelViewSet + create |
-| 13 | [step-13-newsletter.md](step-13-newsletter.md) | Подписка + еженедельная рассылка | APIView без модели CRUD |
-| 14 | [step-14-cashback.md](step-14-cashback.md) | Кэшбэк и порог X | — |
-| 15 | [step-15-celery-emails.md](step-15-celery-emails.md) | Celery Beat, консоль email | — |
-| 16 | [step-16-final.md](step-16-final.md) | Чеклист ТЗ + сценарии | карта API |
+| 7 | [step-07-swagger.md](step-07-swagger.md) | Swagger UI / OpenAPI | `drf-spectacular`, Authorize JWT |
+| 8 | [step-08-registration-email.md](step-08-registration-email.md) | Регистрация + подтверждение email | CreateAPIView + serializer.create |
+| 9 | [step-09-cart.md](step-09-cart.md) | Корзина: добавить / удалить / qty | ViewSet + `@action`, вложенные URL |
+| 10 | [step-10-product-discounts.md](step-10-product-discounts.md) | Скидки на товары | вложенные serializer fields |
+| 11 | [step-11-promo-codes.md](step-11-promo-codes.md) | Промокоды и флаг суммирования | lookup_field=code |
+| 12 | [step-12-pricing-service.md](step-12-pricing-service.md) | Сервис расчёта итоговой суммы | service layer vs views |
+| 13 | [step-13-orders.md](step-13-orders.md) | Заказ + уведомление о доставке | ReadOnlyModelViewSet + create |
+| 14 | [step-14-newsletter.md](step-14-newsletter.md) | Подписка + еженедельная рассылка | APIView без модели CRUD |
+| 15 | [step-15-cashback.md](step-15-cashback.md) | Кэшбэк и порог X | — |
+| 16 | [step-16-celery-emails.md](step-16-celery-emails.md) | Celery Beat, консоль email | — |
+| 17 | [step-17-final.md](step-17-final.md) | Чеклист ТЗ + сценарии | карта API |
 
 > **Совет:** шаги **2, 5 и 6** — теоретический каркас. Не листайте теорию по диагонали: на них завязаны все остальные файлы.
 
-> **Тесты:** в конце **каждого** шага — блок **🧪 Покрытие тестами** (что писать + пример кода). На шаге 1 поднимаете `pytest` + `pytest.ini`; на шаге 16 — полный прогон `pytest`.
+> **Тесты:** в конце **каждого** шага — блок **🧪 Покрытие тестами** (что писать + пример кода). На шаге 1 поднимаете `pytest` + `pytest.ini`; на шаге 17 — полный прогон `pytest`.
 
 ## Что уже есть в репозитории
 
-На старте репозиторий **пустой** — всё создаёте по шагам 1–16.
+На старте репозиторий **пустой** — всё создаёте по шагам 1–17.
 
 | Компонент | Статус |
 |-----------|--------|
 | Django + DRF + PostgreSQL | ❌ шаг 1–2 |
 | User / роли / JWT | ❌ шаг 3 |
 | Catalog API (категории + товары) | ❌ шаги 4–6 |
-| Регистрация + email | ❌ шаг 7 |
-| Корзина | ❌ шаг 8 |
-| Скидки + промокоды + pricing | ❌ шаги 9–11 |
-| Заказы + рассылка + кэшбэк | ❌ шаги 12–14 |
-| Celery / финальный прогон | ❌ шаги 15–16 |
+| Swagger / OpenAPI | ❌ шаг 7 |
+| Регистрация + email | ❌ шаг 8 |
+| Корзина | ❌ шаг 9 |
+| Скидки + промокоды + pricing | ❌ шаги 10–12 |
+| Заказы + рассылка + кэшбэк | ❌ шаги 13–15 |
+| Celery / финальный прогон | ❌ шаги 16–17 |
 
 ## Тестовые пользователи (создадите по ходу)
 
 | Логин / email | Роль | Когда |
 |---------------|------|-------|
 | `manager@shop.local` | менеджер | шаг 3–5 |
-| `client@shop.local` | клиент (email confirmed) | шаг 7 |
+| `client@shop.local` | клиент (email confirmed) | шаг 8 |
 | *(без токена)* | гость | шаг 6 |
 
 ## Быстрые команды
@@ -61,6 +63,7 @@ python manage.py runserver
 ```
 
 - API root / browsable: [http://127.0.0.1:8000/api/](http://127.0.0.1:8000/api/)
+- Swagger UI (с шага 7): [http://127.0.0.1:8000/api/docs/](http://127.0.0.1:8000/api/docs/)
 - Admin: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
 
 Проверка endpoint без браузера:

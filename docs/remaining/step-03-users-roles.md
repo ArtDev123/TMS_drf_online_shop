@@ -141,7 +141,7 @@ class User(AbstractUser):
 | `username = None` | убираем обязательный username из AbstractUser |
 | `USERNAME_FIELD = 'email'` | `authenticate` и JWT ищут пользователя по email |
 | `role` | явное различие клиент / менеджер без путаницы с `is_staff` |
-| `email_confirmed` | для шага 7: пока False — можно запретить заказ |
+| `email_confirmed` | для шага 8: пока False — можно запретить заказ |
 | `is_manager` / `is_client` | удобные свойства для permissions |
 | `UserManager.create_superuser` | `createsuperuser` спросит email, не username |
 
@@ -264,7 +264,7 @@ class IsClientOrReadOnly(BasePermission):
 - `has_object_permission(request, view, obj)` — доступ к конкретному объекту (чужая корзина — нельзя).
 - `SAFE_METHODS` = `GET`, `HEAD`, `OPTIONS` — «только чтение».
 
-`IsClient` пока **не** требует `email_confirmed` — включим на шаге 7, чтобы не ломать проверки раньше времени. Можно завести отдельно `IsConfirmedClient`.
+`IsClient` пока **не** требует `email_confirmed` — включим на шаге 8, чтобы не ломать проверки раньше времени. Можно завести отдельно `IsConfirmedClient`.
 
 ---
 

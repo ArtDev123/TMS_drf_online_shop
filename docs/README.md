@@ -15,7 +15,7 @@
 2. **Теория DRF** — концепции, без которых код «магия».
 3. **Код** — что пишем в файлы.
 4. **Разбор** — зачем каждая конструкция.
-5. **✅ Проверка** — `curl` / browsable API / shell: что должно работать **сейчас**.
+5. **✅ Проверка** — Swagger UI / `curl` / browsable API / shell: что должно работать **сейчас**.
 
 ## Стек
 
@@ -25,6 +25,7 @@
 | Django REST Framework | JSON API, serializers, ViewSets, permissions |
 | PostgreSQL | основная БД |
 | SimpleJWT (или Token) | аутентификация клиента и менеджера |
+| drf-spectacular | OpenAPI-схема + Swagger UI (вместо Postman) |
 | Celery + Redis | еженедельная рассылка скидок, напоминания о доставке |
 | Pillow | картинки товаров (опционально) |
 

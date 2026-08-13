@@ -1,18 +1,28 @@
 # tests/test_products_api.py
 from decimal import Decimal
-import pytest
-from catalog.models import Category, Product
-from unittest.mock import MagicMock
+from io import BytesIO
 
-# mock_image = MagicMock()
-# mock_image.name = 'test_avatar.jpg' 
-# mock_image.size = 1024 # Размер в байтах 
-# mock_image.read.return_value = b'fake_image_bytes' 
-# mock_image.chunks.return_value = [b'fake_image_bytes']
+import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
+
+from catalog.models import Category, Product
+
 
 @pytest.fixture
 def category(db):
     return Category.objects.create(name='Посуда', slug='dishes')
+
+
+@pytest.fixture
+def product_image():
+    buf = BytesIO()
+    Image.new('RGB', (8, 8), color='red').save(buf, format='JPEG')
+    return SimpleUploadedFile(
+        'mug.jpg',
+        buf.getvalue(),
+        content_type='image/jpeg',
+    )
 
 
 @pytest.mark.django_db
@@ -34,7 +44,7 @@ def test_manager_category_crud(manager_api):
 
 
 @pytest.mark.django_db
-def test_manager_product_crud(manager_api, category):
+def test_manager_product_crud(manager_api, category, product_image):
     r = manager_api.post('/api/products/', {
         'category': category.pk,
         'name': 'Кружка',
@@ -43,12 +53,12 @@ def test_manager_product_crud(manager_api, category):
         'price': '9.90',
         'stock': 10,
         'is_active': True,
-        # 'image' : mock_image
-    }, format='json')
-    print(r.text)
+        'image': product_image,
+    }, format='multipart')
     assert r.status_code == 201
     pk = r.data['id']
     assert r.data['category'] == category.pk
+    assert r.data['image']
 
     r = manager_api.patch(f'/api/products/{pk}/', {'price': '11.00'}, format='json')
     assert r.status_code == 200
@@ -60,9 +70,14 @@ def test_manager_product_crud(manager_api, category):
 
 
 @pytest.mark.django_db
-def test_client_cannot_create(client_api, category):
+def test_client_cannot_create(client_api, category, product_image):
     r = client_api.post('/api/products/', {
         'category': category.pk,
-        'name': 'X', 'slug': 'x', 'price': '1.00', 'stock': 1, 'is_active': True,
-    }, format='json')
+        'name': 'X',
+        'slug': 'x',
+        'price': '1.00',
+        'stock': 1,
+        'is_active': True,
+        'image': product_image,
+    }, format='multipart')
     assert r.status_code == 403

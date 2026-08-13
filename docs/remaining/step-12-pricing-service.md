@@ -1,16 +1,16 @@
-# Шаг 11 — Сервис расчёта цены (pricing)
+# Шаг 12 — Сервис расчёта цены (pricing)
 
-**Предыдущий:** [step-10-promo-codes.md](step-10-promo-codes.md) · **Следующий:** [step-12-orders.md](step-12-orders.md)
+**Предыдущий:** [step-11-promo-codes.md](step-11-promo-codes.md) · **Следующий:** [step-13-orders.md](step-13-orders.md)
 
 ## Задача
 
-Вынести **всю** логику итоговой суммы в один сервис. View заказа на шаге 12 только вызовет `calculate_checkout(...)`. Так вы:
+Вынести **всю** логику итоговой суммы в один сервис. View заказа на шаге 13 только вызовет `calculate_checkout(...)`. Так вы:
 
 - не дублируете формулы в корзине и заказе;
 - легко покроете unit-тестами;
 - явно реализуете суммирование / не суммирование промокода.
 
-Кэшбэк к списанию подключим на шаге 14 — оставим параметр `cashback_to_use`.
+Кэшбэк к списанию подключим на шаге 15 — оставим параметр `cashback_to_use`.
 
 ---
 
@@ -101,8 +101,8 @@ def calculate_checkout(
     """
     Главная функция расчёта.
 
-    Правила промокода — см. step-10.
-    cashback_to_use обрезается сверху по total после скидок (шаг 14 добавит проверку порога X).
+    Правила промокода — см. step-11.
+    cashback_to_use обрезается сверху по total после скидок (шаг 15 добавит проверку порога X).
     """
     lines = list(lines)
     detail_lines = []
@@ -414,4 +414,4 @@ def test_non_stackable_prefers_promo_when_better(product_100):
 pytest tests/test_pricing.py tests/test_checkout_preview.py
 ```
 
-**Все пункты отмечены?** → [step-12-orders.md](step-12-orders.md)
+**Все пункты отмечены?** → [step-13-orders.md](step-13-orders.md)

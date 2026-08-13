@@ -1,6 +1,6 @@
-# Шаг 10 — Промокоды и правило суммирования
+# Шаг 11 — Промокоды и правило суммирования
 
-**Предыдущий:** [step-09-product-discounts.md](step-09-product-discounts.md) · **Следующий:** [step-11-pricing-service.md](step-11-pricing-service.md)
+**Предыдущий:** [step-10-product-discounts.md](step-10-product-discounts.md) · **Следующий:** [step-12-pricing-service.md](step-12-pricing-service.md)
 
 ## Задача
 
@@ -9,7 +9,7 @@
 - **суммировать** промокод со скидками на товары;
 - **не суммировать** — промокод и товарные скидки вместе не применяются.
 
-Саму математику вынесем на шаг 11; здесь — модель, API менеджера и **чёткие правила**.
+Саму математику вынесем на шаг 12; здесь — модель, API менеджера и **чёткие правила**.
 
 ---
 
@@ -328,4 +328,4 @@ def test_manager_promo_crud(manager_api, client_api):
 pytest tests/test_promo_codes.py tests/test_promo_codes_api.py
 ```
 
-**Все пункты отмечены?** → [step-11-pricing-service.md](step-11-pricing-service.md)
+**Все пункты отмечены?** → [step-12-pricing-service.md](step-12-pricing-service.md)

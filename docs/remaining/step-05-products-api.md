@@ -358,7 +358,7 @@ def archive(self, request, pk=None):
 # → POST /api/products/{pk}/archive/
 ```
 
-`detail=False` → `/api/products/archive/` (без pk). Корзина на шаге 8 как раз использует `@action`.
+`detail=False` → `/api/products/archive/` (без pk). Корзина на шаге 9 как раз использует `@action`.
 
 ### Как отладить маршруты
 
@@ -427,7 +427,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 - `ModelSerializer` сам строит поля по модели и умеет `.create()` / `.update()` — ViewSet вызовет `serializer.save()` за вас.
 - `category` в JSON — id категории (`1`, `2`, …); DRF сам резолвит FK.
-- `fields = (…)`, не `__all__` — явный контракт JSON для фронта/Postman.
+- `fields = (…)`, не `__all__` — явный контракт JSON для фронта/Swagger.
 - `read_only_fields` — клиент не подделает `id` и timestamps в POST/PATCH.
 - `validate_price` — шаг 2 цепочки валидации (после приведения типа поля, до `validate()`).
 - Ошибка → HTTP **400** и тело вида `{"price": ["Цена должна быть больше 0"]}`.

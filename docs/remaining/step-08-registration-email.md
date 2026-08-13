@@ -1,6 +1,6 @@
-# Шаг 7 — Регистрация клиента с подтверждением email
+# Шаг 8 — Регистрация клиента с подтверждением email
 
-**Предыдущий:** [step-06-catalog-public.md](step-06-catalog-public.md) · **Следующий:** [step-08-cart.md](step-08-cart.md)
+**Предыдущий:** [step-07-swagger.md](step-07-swagger.md) · **Следующий:** [step-09-cart.md](step-09-cart.md)
 
 ## Задача
 
@@ -280,7 +280,7 @@ class IsConfirmedClient(BasePermission):
         )
 ```
 
-На шаге 8 повесьте его на корзину и на шаг 12 — на заказ.
+На шаге 9 повесьте его на корзину и на шаг 13 — на заказ.
 
 ---
 
@@ -387,4 +387,4 @@ def test_register_password_mismatch(api):
 pytest tests/test_registration.py
 ```
 
-**Все пункты отмечены?** → [step-08-cart.md](step-08-cart.md)
+**Все пункты отмечены?** → [step-09-cart.md](step-09-cart.md)

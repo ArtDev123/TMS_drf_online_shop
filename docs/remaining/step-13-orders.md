@@ -1,12 +1,12 @@
-# Шаг 12 — Заказ и уведомление о доставке
+# Шаг 13 — Заказ и уведомление о доставке
 
-**Предыдущий:** [step-11-pricing-service.md](step-11-pricing-service.md) · **Следующий:** [step-13-newsletter.md](step-13-newsletter.md)
+**Предыдущий:** [step-12-pricing-service.md](step-12-pricing-service.md) · **Следующий:** [step-14-newsletter.md](step-14-newsletter.md)
 
 ## Задача
 
 Клиент оформляет **заказ** из корзины: промокод (опционально), желаемое время доставки, и выбирает, когда получить email-напоминание: **за 1 день / за 6 часов / за 1 час** до доставки.
 
-Пока Celery может быть «заглушкой» через `apply_async(eta=…)` или даже синхронный `send_mail` для проверки — полноценный Beat/worker на шаге 15.
+Пока Celery может быть «заглушкой» через `apply_async(eta=…)` или даже синхронный `send_mail` для проверки — полноценный Beat/worker на шаге 16.
 
 ---
 
@@ -119,7 +119,7 @@ from promotions.models import PromoCode
 from promotions.services import LineInput, calculate_checkout
 
 from .models import NotifyBefore, Order, OrderItem
-from .tasks import schedule_delivery_notification  # шаг 15; пока заглушка ниже
+from .tasks import schedule_delivery_notification  # шаг 16; пока заглушка ниже
 
 
 NOTIFY_DELTA = {
@@ -185,7 +185,7 @@ def create_order_from_cart(*, user, delivery_at, notify_before, promo_code='', c
     return order, pricing
 ```
 
-Временная заглушка `orders/tasks.py` (до шага 15):
+Временная заглушка `orders/tasks.py` (до шага 16):
 
 ```python
 from django.core.mail import send_mail
@@ -195,7 +195,7 @@ from django.conf import settings
 def schedule_delivery_notification(order_id: int, notify_at):
     """
     Заглушка: в консоль пишем, когда нужно напомнить.
-    На шаге 15 заменим на Celery eta=notify_at.
+    На шаге 16 заменим на Celery eta=notify_at.
     """
     print(f'[notify stub] order={order_id} at {notify_at.isoformat()}')
     # Для демо можно сразу отправить письмо:
@@ -329,7 +329,7 @@ def validate(self, attrs):
 ## ✅ Ручная проверка
 
 ```bash
-# положите товары в корзину (шаг 8), затем:
+# положите товары в корзину (шаг 9), затем:
 curl -s -X POST http://127.0.0.1:8000/api/orders/ \
   -H "Authorization: Bearer $CTOKEN" \
   -H 'Content-Type: application/json' \
@@ -422,4 +422,4 @@ def test_order_past_delivery_rejected(client_api, client_user):
 pytest tests/test_orders_api.py
 ```
 
-**Все пункты отмечены?** → [step-13-newsletter.md](step-13-newsletter.md)
+**Все пункты отмечены?** → [step-14-newsletter.md](step-14-newsletter.md)

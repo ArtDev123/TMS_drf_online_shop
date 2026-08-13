@@ -1,6 +1,6 @@
-# Шаг 8 — Корзина: добавить, удалить, изменить количество
+# Шаг 9 — Корзина: добавить, удалить, изменить количество
 
-**Предыдущий:** [step-07-registration-email.md](step-07-registration-email.md) · **Следующий:** [step-09-product-discounts.md](step-09-product-discounts.md)
+**Предыдущий:** [step-08-registration-email.md](step-08-registration-email.md) · **Следующий:** [step-10-product-discounts.md](step-10-product-discounts.md)
 
 ## Задача
 
@@ -195,7 +195,7 @@ class CartSerializer(serializers.ModelSerializer):
 
 - `product_id` + `source='product'` — в JSON пишем `product_id`, в модель кладём FK `product`.
 - `SerializerMethodField` — вычисляемые поля только на чтение.
-- На этом шаге `total` ещё **без** скидок; пересчёт с скидками — шаг 11. Пока достаточно базовой суммы.
+- На этом шаге `total` ещё **без** скидок; пересчёт с скидками — шаг 12. Пока достаточно базовой суммы.
 
 ---
 
@@ -425,4 +425,4 @@ def test_guest_cart_forbidden(api):
 pytest tests/test_cart_api.py
 ```
 
-**Все пункты отмечены?** → [step-09-product-discounts.md](step-09-product-discounts.md)
+**Все пункты отмечены?** → [step-10-product-discounts.md](step-10-product-discounts.md)

@@ -117,7 +117,8 @@ URL (path / include / Router) → APIView или ViewSet → Serializer → JSON
 | JWT встраивается в `initial()` view | [step-03](remaining/step-03-users-roles.md) |
 | `ModelSerializer`, `ModelViewSet`, `DefaultRouter`, `self.action` | [step-05](remaining/step-05-products-api.md) |
 | `get_permissions` / `get_queryset` по роли | [step-06](remaining/step-06-catalog-public.md) |
-| `@action` для своих URL | [step-08](remaining/step-08-cart.md) |
+| OpenAPI / Swagger UI (`drf-spectacular`) | [step-07](remaining/step-07-swagger.md) |
+| `@action` для своих URL | [step-09](remaining/step-09-cart.md) |
 
 **Пример:** клиент добавляет товар в корзину `POST /api/cart/items/`
 
@@ -151,13 +152,13 @@ URL (path / include / Router) → APIView или ViewSet → Serializer → JSON
 | GET/PATCH | `/settings/` | менеджер | % кэшбэка и порог X |
 | GET | `/wallet/` | клиент | баланс кэшбэка |
 
-Полная таблица и сценарии — на [шаге 16](remaining/step-16-final.md).
+Полная таблица и сценарии — на [шаге 17](remaining/step-17-final.md).
 
 ---
 
 ## 6. Как считается итоговая цена
 
-Это ядро бизнеса. Вынесем в **сервис** `pricing.calculate_order_total(...)` (шаг 11), а не размажем по views.
+Это ядро бизнеса. Вынесем в **сервис** `pricing.calculate_order_total(...)` (шаг 12), а не размажем по views.
 
 ```text
 1. Сумма позиций = Σ (unit_price × qty)
@@ -170,7 +171,7 @@ URL (path / include / Router) → APIView или ViewSet → Serializer → JSON
        → либо только товарные скидки, либо только промокод
          (в гайде: выбираем выгодный для клиента вариант
           ИЛИ жёстко «промокод отменяет суммирование» —
-          зафиксируем правило на шаге 10–11)
+          зафиксируем правило на шаге 11–12)
 
 3. Кэшбэк к списанию (если balance ≥ X и клиент запросил):
    → вычитаем min(requested, balance, total_after_discounts)
@@ -212,15 +213,16 @@ TMS_drf_online_shop/
 | 4 | [step-04-products-models.md](remaining/step-04-products-models.md) | Модели Category + Product |
 | 5 | [step-05-products-api.md](remaining/step-05-products-api.md) | CRUD категорий и товаров для менеджера |
 | 6 | [step-06-catalog-public.md](remaining/step-06-catalog-public.md) | Публичный каталог для гостя |
-| 7 | [step-07-registration-email.md](remaining/step-07-registration-email.md) | Регистрация + confirm email |
-| 8 | [step-08-cart.md](remaining/step-08-cart.md) | Корзина: add/remove/qty |
-| 9 | [step-09-product-discounts.md](remaining/step-09-product-discounts.md) | Скидки на товары |
-| 10 | [step-10-promo-codes.md](remaining/step-10-promo-codes.md) | Промокоды + stackable |
-| 11 | [step-11-pricing-service.md](remaining/step-11-pricing-service.md) | Сервис расчёта цены |
-| 12 | [step-12-orders.md](remaining/step-12-orders.md) | Заказ + remind о доставке |
-| 13 | [step-13-newsletter.md](remaining/step-13-newsletter.md) | Подписка + weekly task |
-| 14 | [step-14-cashback.md](remaining/step-14-cashback.md) | Кэшбэк и порог X |
-| 15 | [step-15-celery-emails.md](remaining/step-15-celery-emails.md) | Сводка Celery/email |
-| 16 | [step-16-final.md](remaining/step-16-final.md) | Финальный прогон по ТЗ |
+| 7 | [step-07-swagger.md](remaining/step-07-swagger.md) | Swagger UI / OpenAPI (`drf-spectacular`) |
+| 8 | [step-08-registration-email.md](remaining/step-08-registration-email.md) | Регистрация + confirm email |
+| 9 | [step-09-cart.md](remaining/step-09-cart.md) | Корзина: add/remove/qty |
+| 10 | [step-10-product-discounts.md](remaining/step-10-product-discounts.md) | Скидки на товары |
+| 11 | [step-11-promo-codes.md](remaining/step-11-promo-codes.md) | Промокоды + stackable |
+| 12 | [step-12-pricing-service.md](remaining/step-12-pricing-service.md) | Сервис расчёта цены |
+| 13 | [step-13-orders.md](remaining/step-13-orders.md) | Заказ + remind о доставке |
+| 14 | [step-14-newsletter.md](remaining/step-14-newsletter.md) | Подписка + weekly task |
+| 15 | [step-15-cashback.md](remaining/step-15-cashback.md) | Кэшбэк и порог X |
+| 16 | [step-16-celery-emails.md](remaining/step-16-celery-emails.md) | Сводка Celery/email |
+| 17 | [step-17-final.md](remaining/step-17-final.md) | Финальный прогон по ТЗ |
 
 **Начните здесь:** [remaining/README.md](remaining/README.md)
