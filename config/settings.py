@@ -140,6 +140,9 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'shop@localhost'
+FRONTEND_CONFIRM_URL = 'http://127.0.0.1:8000/api/auth/confirm-email/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
