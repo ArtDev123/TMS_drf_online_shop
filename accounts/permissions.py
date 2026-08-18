@@ -30,3 +30,14 @@ class IsClientOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return bool(request.user and request.user.is_authenticated)
+
+
+class IsConfirmedClient(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and user.is_client
+            and user.email_confirmed
+        )

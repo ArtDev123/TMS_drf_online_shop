@@ -16,6 +16,11 @@ def manager(db):
     )
 
 
+@pytest.fixture(autouse=True)
+def email_backend(settings):
+    settings.EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+
+
 @pytest.fixture
 def client_user(db):
     return User.objects.create_user(
