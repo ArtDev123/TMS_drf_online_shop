@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -35,6 +37,12 @@ class ConfirmEmailView(APIView):
         ok, msg = confirm_user_email(ser.validated_data['uid'], ser.validated_data['token'])
         return Response({'detail': msg}, status=200 if ok else 400)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('uid', OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ],
+    )
     def get(self, request):
         ok, msg = confirm_user_email(
             request.query_params.get('uid', ''),

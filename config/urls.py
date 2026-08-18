@@ -7,14 +7,10 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
-from rest_framework_simplejwt.views import TokenRefreshView
-
-from accounts.views import EmailTokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # OpenAPI / Swagger
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path(
         'api/docs/',
@@ -27,7 +23,7 @@ urlpatterns = [
         name='redoc',
     ),
 
-    path('api/health/', include('core.urls')),  # или path('api/', include(...)) как было
+    path('api/health/', include('core.urls')),
     path('api/', include('accounts.urls')),
     path('api/', include('catalog.urls')),
 ]
