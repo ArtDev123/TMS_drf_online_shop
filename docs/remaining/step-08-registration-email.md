@@ -103,22 +103,26 @@ class ConfirmEmailSerializer(serializers.Serializer):
 
 ```python
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from .utils import email_token_generator
+
 
 def send_confirmation_email(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
-    link = (
-        f"{settings.FRONTEND_CONFIRM_URL}"
-        f"?uid={uid}&token={token}"
-    )
+    token = email_token_generator.make_token(user)
+    # Не вставляем полную ссылку с "?uid=...&token=...":
+    # console backend + quoted-printable превращает "=" в "=3D".
     send_mail(
-        subject='Подтвердите email — Online Shop',
-        message=f'Здравствуйте, {user.first_name}!\n\nПодтвердите email:\n{link}\n',
+        subject='Verify email: Online Shop',
+        message=(
+            f'Hello {user.first_name}!\n\n'
+            f'Confirm URL: {settings.FRONTEND_CONFIRM_URL}\n'
+            f'uid: {uid}\n'
+            f'token: {token}\n'
+        ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
         fail_silently=False,
@@ -126,7 +130,9 @@ def send_confirmation_email(user):
     return uid, token  # token возвращаем только для тестов/шелла, в проде не логировать
 ```
 
-`default_token_generator` — стандарт Django: токен привязан к user + хешу пароля + timestamp, одноразово «портится» после смены пароля.
+В письме — отдельно `uid` и `token`. Подтверждение через POST (как ниже) или GET, собрав query сами. Нормальный SMTP-клиент QP декодирует сам; ломается именно копирование из console backend.
+
+`email_token_generator` / `default_token_generator` — токен привязан к user + хешу пароля + timestamp, одноразово «портится» после смены пароля.
 
 ---
 
@@ -166,44 +172,6 @@ class RegisterView(generics.CreateAPIView):
         send_confirmation_email(user)
 
 
-class ConfirmEmailView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        ser = ConfirmEmailSerializer(data=request.data)
-        ser.is_valid(raise_exception=True)
-        uid = ser.validated_data['uid']
-        token = ser.validated_data['token']
-        try:
-            user_id = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=user_id)
-        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
-            return Response({'detail': 'Некорректная ссылка'}, status=400)
-
-        if default_token_generator.check_token(user, token):
-            user.email_confirmed = True
-            user.save(update_fields=['email_confirmed'])
-            return Response({'detail': 'Email подтверждён'})
-        return Response({'detail': 'Токен недействителен'}, status=400)
-
-    def get(self, request):
-        # удобно открыть ссылку из письма в браузере
-        data = {
-            'uid': request.query_params.get('uid', ''),
-            'token': request.query_params.get('token', ''),
-        }
-        request._full_data = data  # не нужно — лучше явно:
-        ser = ConfirmEmailSerializer(data=data)
-        ser.is_valid(raise_exception=True)
-        # делегируем той же логике
-        self.request = request
-        request.data._mutable = True if hasattr(request.data, '_mutable') else None
-        return self.post(type('R', (), {'data': ser.validated_data, 'user': request.user})())
-```
-
-GET-ветка выше намеренно хрупкая в «упрощённом» виде. **Сделайте проще** — вынесите логику в функцию:
-
-```python
 def confirm_user_email(uid: str, token: str) -> tuple[bool, str]:
     try:
         user_id = force_str(urlsafe_base64_decode(uid))
