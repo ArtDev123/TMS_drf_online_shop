@@ -2,6 +2,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -31,21 +32,23 @@ class RegisterView(generics.CreateAPIView):
 class ConfirmEmailView(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def post(self, request: Response) -> Response:
         ser = ConfirmEmailSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        ok, msg = confirm_user_email(ser.validated_data['uid'], ser.validated_data['token'])
-        return Response({'detail': msg}, status=200 if ok else 400)
+        ok, msg = confirm_user_email(
+            ser.validated_data["uid"], ser.validated_data["token"]
+        )
+        return Response({"detail": msg}, status=200 if ok else 400)
 
     @extend_schema(
         parameters=[
-            OpenApiParameter('uid', OpenApiTypes.STR, OpenApiParameter.QUERY),
-            OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("uid", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.QUERY),
         ],
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         ok, msg = confirm_user_email(
-            request.query_params.get('uid', ''),
-            request.query_params.get('token', ''),
+            request.query_params.get("uid", ""),
+            request.query_params.get("token", ""),
         )
-        return Response({'detail': msg}, status=200 if ok else 400)
+        return Response({"detail": msg}, status=200 if ok else 400)
