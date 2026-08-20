@@ -50,7 +50,7 @@ python -m pip install --upgrade pip
 
 ## 3. Установить зависимости
 
-Пока ставим минимум. JWT — на шаге 3; OpenAPI/Swagger — на шаге 7; Celery и Redis — на шаге 16.
+Пока ставим минимум. JWT — на шаге 3; OpenAPI/Swagger — на шаге 7; Celery и Redis — на шаге 15.
 
 ```bash
 pip install "Django>=5.1,<6.1" djangorestframework psycopg2-binary python-dotenv Pillow

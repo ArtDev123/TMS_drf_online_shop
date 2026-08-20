@@ -81,7 +81,7 @@ ViewSet
 | `ViewSet` | совсем кастомные действия (`@action`), сами пишете методы |
 | `GenericViewSet` + mixins | нужен кусок CRUD, не весь (например только list+create) |
 | `ReadOnlyModelViewSet` | каталог «только читать» |
-| `ModelViewSet` | полный CRUD ресурса (товары, скидки, промокоды) |
+| `ModelViewSet` | полный CRUD ресурса (товары, скидки) |
 
 Mixins, из которых склеен `ModelViewSet`:
 

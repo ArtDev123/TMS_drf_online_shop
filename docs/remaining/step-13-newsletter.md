@@ -1,12 +1,12 @@
-# Шаг 14 — Подписка на рассылку скидок (раз в неделю)
+# Шаг 13 — Подписка на рассылку скидок (раз в неделю)
 
-**Предыдущий:** [step-13-orders.md](step-13-orders.md) · **Следующий:** [step-15-cashback.md](step-15-cashback.md)
+**Предыдущий:** [step-12-orders.md](step-12-orders.md) · **Следующий:** [step-14-cashback.md](step-14-cashback.md)
 
 ## Задача
 
 Клиент подписывается на email-рассылку и **раз в неделю** получает письмо об актуальных скидках на товары (`ProductDiscount`, которые сейчас активны).
 
-Фоновый запуск — Celery Beat (детали инфраструктуры — шаг 16). Здесь: модель подписки, API, задача «собрать скидки и разослать».
+Фоновый запуск — Celery Beat (детали инфраструктуры — шаг 15). Здесь: модель подписки, API, задача «собрать скидки и разослать».
 
 ---
 
@@ -25,7 +25,7 @@ Celery Worker              →  забирает задачу, шлёт пись
 python manage.py shell -c "from promotions.tasks import send_weekly_discounts; send_weekly_discounts()"
 ```
 
-На шаге 16 обернём в `@shared_task` и расписание.
+На шаге 15 обернём в `@shared_task` и расписание.
 
 ---
 
@@ -74,7 +74,10 @@ class NewsletterSerializer(serializers.ModelSerializer):
 
 `promotions/views.py`:
 
+GET/POST/DELETE без serializer на входе — `@extend_schema` нужен, чтобы методы попали в Swagger с нормальными названиями (body у POST/DELETE здесь нет).
+
 ```python
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -86,10 +89,12 @@ from .serializers import NewsletterSerializer
 class NewsletterView(APIView):
     permission_classes = [IsConfirmedClient]
 
+    @extend_schema(summary='Статус подписки', tags=['newsletter'], responses=NewsletterSerializer)
     def get(self, request):
         sub, _ = NewsletterSubscription.objects.get_or_create(user=request.user)
         return Response(NewsletterSerializer(sub).data)
 
+    @extend_schema(summary='Подписаться', tags=['newsletter'], request=None, responses=NewsletterSerializer)
     def post(self, request):
         """Подписаться (или реактивировать)."""
         sub, _ = NewsletterSubscription.objects.get_or_create(user=request.user)
@@ -97,6 +102,7 @@ class NewsletterView(APIView):
         sub.save(update_fields=['is_active'])
         return Response(NewsletterSerializer(sub).data)
 
+    @extend_schema(summary='Отписаться', tags=['newsletter'], request=None, responses=NewsletterSerializer)
     def delete(self, request):
         """Отписаться."""
         sub, _ = NewsletterSubscription.objects.get_or_create(user=request.user)
@@ -199,11 +205,13 @@ def send_weekly_discounts_task():
     return _send()
 ```
 
-Пока Celery не настроен, импорт `shared_task` упадёт — либо установите celery (шаг 1 requirements), либо временно закомментируйте декоратор и оставьте обычную функцию. На шаге 16 подключим Beat: `crontab(day_of_week='mon', hour=10, minute=0)`.
+Пока Celery не настроен, импорт `shared_task` упадёт — либо установите celery (шаг 1 requirements), либо временно закомментируйте декоратор и оставьте обычную функцию. На шаге 15 подключим Beat: `crontab(day_of_week='mon', hour=10, minute=0)`.
 
 ---
 
 ## ✅ Ручная проверка
+
+В [Swagger](http://127.0.0.1:8000/api/docs/): Authorize **клиентом** → тег **newsletter**. POST без body подписывает, DELETE отписывает, GET показывает статус.
 
 ```bash
 curl -s -X POST http://127.0.0.1:8000/api/newsletter/ \
@@ -214,6 +222,7 @@ python manage.py send_weekly_discounts
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
+| ☐ | Тег **newsletter** в `/api/docs/` | GET / POST / DELETE |
 | ☐ | POST newsletter | `is_active: true` |
 | ☐ | DELETE newsletter | `is_active: false` |
 | ☐ | Есть активная ProductDiscount | письмо со списком в консоли |
@@ -272,4 +281,4 @@ def test_weekly_send_only_active_subscribers(client_user, settings):
 pytest tests/test_newsletter.py
 ```
 
-**Все пункты отмечены?** → [step-15-cashback.md](step-15-cashback.md)
+**Все пункты отмечены?** → [step-14-cashback.md](step-14-cashback.md)

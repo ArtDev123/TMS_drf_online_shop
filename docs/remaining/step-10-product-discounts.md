@@ -1,10 +1,10 @@
 # Шаг 10 — Скидки на отдельные товары
 
-**Предыдущий:** [step-09-cart.md](step-09-cart.md) · **Следующий:** [step-11-promo-codes.md](step-11-promo-codes.md)
+**Предыдущий:** [step-09-cart.md](step-09-cart.md) · **Следующий:** [step-11-pricing-service.md](step-11-pricing-service.md)
 
 ## Задача
 
-Менеджер задаёт скидку на **определённые товары**. Клиент в каталоге/корзине должен видеть цену со скидкой (отображение — здесь; финальный расчёт заказа — шаг 12).
+Менеджер задаёт скидку на **определённые товары**. Клиент в каталоге/корзине должен видеть цену со скидкой (отображение — здесь; финальный расчёт заказа — шаг 11).
 
 ---
 
@@ -15,7 +15,7 @@
 | `Product.discount_percent` | просто | нет периода, истории, нескольких акций |
 | `ProductDiscount` FK → Product | даты, активность, тип (% или сумма) | чуть больше кода |
 
-Для ТЗ и суммирования с промокодом берём **ProductDiscount**.
+Для ТЗ берём **ProductDiscount**: даты, активность, тип (% или сумма).
 
 Правило «одна активная скидка на товар»: либо `UniqueConstraint` по product среди active, либо в коде берём «лучшую» / «последнюю». В гайде — не больше одной активной на товар (валидация в serializer).
 
@@ -190,11 +190,24 @@ class ProductDiscountSerializer(serializers.ModelSerializer):
 `catalog/views.py`:
 
 ```python
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
+
+@extend_schema_view(
+    list=extend_schema(summary='Список скидок', tags=['discounts']),
+    retrieve=extend_schema(summary='Скидка', tags=['discounts']),
+    create=extend_schema(summary='Создать скидку (менеджер)', tags=['discounts']),
+    update=extend_schema(summary='Заменить скидку', tags=['discounts']),
+    partial_update=extend_schema(summary='Изменить скидку', tags=['discounts']),
+    destroy=extend_schema(summary='Удалить скидку', tags=['discounts']),
+)
 class ProductDiscountViewSet(viewsets.ModelViewSet):
     queryset = ProductDiscount.objects.select_related('product').all()
     serializer_class = ProductDiscountSerializer
     permission_classes = [IsManager]
 ```
+
+`ModelViewSet` + `ModelSerializer` — body в Swagger подтянется сам; `@extend_schema_view` только даёт тег и человеческие названия.
 
 Router:
 
@@ -241,6 +254,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 ## ✅ Ручная проверка
 
+В [Swagger](http://127.0.0.1:8000/api/docs/): Authorize **менеджером** → тег **discounts** → `POST /api/discounts/`. Поля body (`product`, `discount_type`, `value`, …) берутся из `ProductDiscountSerializer`. Затем без токена `GET /api/products/{id}/` — в ответе `effective_price` и `discount`.
+
 ```bash
 # менеджер создаёт скидку 20% на product 1
 curl -s -X POST http://127.0.0.1:8000/api/discounts/ \
@@ -255,6 +270,7 @@ curl -s http://127.0.0.1:8000/api/products/1/ | python -m json.tool
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
+| ☐ | Тег **discounts** в `/api/docs/` | CRUD, body с `product` / `value` |
 | ☐ | POST discount менеджером | 201 |
 | ☐ | GET product | `effective_price` меньше `price` |
 | ☐ | Вторая активная скидка на тот же product | 400 |
@@ -344,4 +360,4 @@ def test_manager_creates_discount(manager_api, api):
 pytest tests/test_discounts.py tests/test_discounts_api.py
 ```
 
-**Все пункты отмечены?** → [step-11-promo-codes.md](step-11-promo-codes.md)
+**Все пункты отмечены?** → [step-11-pricing-service.md](step-11-pricing-service.md)

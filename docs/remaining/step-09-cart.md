@@ -195,14 +195,18 @@ class CartSerializer(serializers.ModelSerializer):
 
 - `product_id` + `source='product'` — в JSON пишем `product_id`, в модель кладём FK `product`.
 - `SerializerMethodField` — вычисляемые поля только на чтение.
-- На этом шаге `total` ещё **без** скидок; пересчёт с скидками — шаг 12. Пока достаточно базовой суммы.
+- На этом шаге `total` ещё **без** скидок; пересчёт с скидками — шаг 11. Пока достаточно базовой суммы.
 
 ---
 
 ## 5. ViewSet — `cart/views.py`
 
+Кастомный `ViewSet` + `@action` без `queryset`: auto-schema часто **не рисует body**. Подписи `@extend_schema` обязательны, иначе в Swagger POST/PATCH будут пустыми.
+
 ```python
-from rest_framework import mixins, status, viewsets
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -212,6 +216,9 @@ from .serializers import CartItemSerializer, CartSerializer
 from .services import get_or_create_cart
 
 
+@extend_schema_view(
+    list=extend_schema(summary='Моя корзина', tags=['cart'], responses=CartSerializer),
+)
 class CartViewSet(viewsets.ViewSet):
     """
     GET    /api/cart/              — моя корзина
@@ -226,6 +233,12 @@ class CartViewSet(viewsets.ViewSet):
         cart = get_or_create_cart(request.user)
         return Response(CartSerializer(cart).data)
 
+    @extend_schema(
+        summary='Добавить товар в корзину',
+        tags=['cart'],
+        request=CartItemSerializer,
+        responses={201: CartSerializer},
+    )
     @action(detail=False, methods=['post'], url_path='items')
     def add_item(self, request):
         cart = get_or_create_cart(request.user)
@@ -251,6 +264,22 @@ class CartViewSet(viewsets.ViewSet):
 
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary='Изменить количество',
+        tags=['cart'],
+        methods=['PATCH'],
+        parameters=[OpenApiParameter('item_id', OpenApiTypes.INT, OpenApiParameter.PATH)],
+        request=CartItemSerializer,
+        responses=CartSerializer,
+    )
+    @extend_schema(
+        summary='Удалить позицию',
+        tags=['cart'],
+        methods=['DELETE'],
+        parameters=[OpenApiParameter('item_id', OpenApiTypes.INT, OpenApiParameter.PATH)],
+        request=None,
+        responses=CartSerializer,
+    )
     @action(
         detail=False,
         methods=['patch', 'delete'],
@@ -310,7 +339,16 @@ path('api/', include('cart.urls')),
 
 ## ✅ Ручная проверка
 
-Сначала токен подтверждённого клиента:
+Проверка в [Swagger UI](http://127.0.0.1:8000/api/docs/) (шаг 7): `POST /api/auth/token/` клиентом → **Authorize** → тег **cart** → **Try it out**.
+
+| Метод | Path | Body |
+|-------|------|------|
+| GET | `/api/cart/` | — |
+| POST | `/api/cart/items/` | `{"product_id": 1, "quantity": 2}` |
+| PATCH | `/api/cart/items/{id}/` | `{"quantity": 5}` |
+| DELETE | `/api/cart/items/{id}/` | — |
+
+Запасной вариант — `curl`. Сначала токен подтверждённого клиента:
 
 ```bash
 CTOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/token/ \
@@ -345,6 +383,7 @@ curl -s -X DELETE http://127.0.0.1:8000/api/cart/items/1/ \
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
+| ☐ | Тег **cart** в `/api/docs/` | GET/POST/PATCH/DELETE, у POST есть `product_id` |
 | ☐ | GET `/api/cart/` с токеном клиента | пустая или текущая корзина |
 | ☐ | POST item | позиция появилась, quantity верный |
 | ☐ | Повторный POST того же product | quantity суммируется |

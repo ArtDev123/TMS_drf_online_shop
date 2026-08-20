@@ -1,6 +1,6 @@
-# Шаг 15 — Кэшбэк: начисление и списание
+# Шаг 14 — Кэшбэк: начисление и списание
 
-**Предыдущий:** [step-14-newsletter.md](step-14-newsletter.md) · **Следующий:** [step-16-celery-emails.md](step-16-celery-emails.md)
+**Предыдущий:** [step-13-newsletter.md](step-13-newsletter.md) · **Следующий:** [step-15-celery-emails.md](step-15-celery-emails.md)
 
 ## Задача
 
@@ -175,7 +175,7 @@ with transaction.atomic():
     earned = earn_cashback(user, pricing.total)
     order.cashback_earned = earned
     order.save(update_fields=['cashback_earned'])
-    # очистка корзины, promo used_count
+    # очистка корзины
 ```
 
 Порядок важен: сначала проверяем порог X, считаем total, в транзакции списываем, потом начисляем с `pricing.total` (уже после списания).
@@ -196,16 +196,34 @@ class ShopSettingsSerializer(serializers.ModelSerializer):
 
 View:
 
+`APIView` + `ShopSettingsSerializer` — укажите `request`/`responses`, иначе PATCH в Swagger без полей.
+
 ```python
+from drf_spectacular.utils import extend_schema
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from accounts.permissions import IsManager
+from .models import ShopSettings
+from .serializers import ShopSettingsSerializer
+
+
 class ShopSettingsView(APIView):
     def get_permissions(self):
         if self.request.method == 'GET':
             return [IsManager()]  # или AllowAny для процента — по желанию
         return [IsManager()]
 
+    @extend_schema(summary='Настройки кэшбэка', tags=['settings'], responses=ShopSettingsSerializer)
     def get(self, request):
         return Response(ShopSettingsSerializer(ShopSettings.load()).data)
 
+    @extend_schema(
+        summary='Изменить % и порог X (менеджер)',
+        tags=['settings'],
+        request=ShopSettingsSerializer,
+        responses=ShopSettingsSerializer,
+    )
     def patch(self, request):
         ser = ShopSettingsSerializer(ShopSettings.load(), data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
@@ -216,9 +234,17 @@ class ShopSettingsView(APIView):
 `accounts/views.py` — баланс клиента:
 
 ```python
+from drf_spectacular.utils import extend_schema
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from accounts.permissions import IsConfirmedClient
+
+
 class WalletView(APIView):
     permission_classes = [IsConfirmedClient]
 
+    @extend_schema(summary='Баланс кэшбэка', tags=['cashback'])
     def get(self, request):
         from accounts.services.wallet import get_wallet
         from promotions.models import ShopSettings
@@ -236,6 +262,11 @@ URL: `/api/wallet/`, `/api/settings/`.
 ---
 
 ## ✅ Ручная проверка
+
+В [Swagger](http://127.0.0.1:8000/api/docs/):
+
+1. Authorize **менеджером** → тег **settings** → `PATCH /api/settings/` (`cashback_percent`, `cashback_min_to_spend`).
+2. Authorize **клиентом** → тег **cashback** → `GET /api/wallet/`. Списание — в теге **orders**, поле `cashback_to_use`.
 
 ```bash
 # менеджер
@@ -261,6 +292,7 @@ curl -s -X POST http://127.0.0.1:8000/api/orders/ \
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
+| ☐ | Теги **settings** / **cashback** в `/api/docs/` | PATCH settings, GET wallet |
 | ☐ | PATCH settings | percent и X сохранились |
 | ☐ | Заказ без кэшбэка | `cashback_earned` > 0 при percent>0 |
 | ☐ | wallet balance вырос | совпадает с earned |
@@ -329,4 +361,4 @@ def test_earn_and_spend(client_user):
 pytest tests/test_cashback.py tests/test_cashback_api.py
 ```
 
-**Все пункты отмечены?** → [step-16-celery-emails.md](step-16-celery-emails.md)
+**Все пункты отмечены?** → [step-15-celery-emails.md](step-15-celery-emails.md)

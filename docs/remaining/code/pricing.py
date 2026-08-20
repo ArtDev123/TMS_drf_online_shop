@@ -1,4 +1,4 @@
-"""Расчёт итоговой суммы заказа: товарные скидки + промокод + кэшбэк."""
+"""Расчёт итоговой суммы заказа: товарные скидки + кэшбэк."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -6,7 +6,6 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable
 
 from catalog.services import get_effective_unit_price
-from promotions.models import PromoCode, PromoDiscountType
 
 ZERO = Decimal('0.00')
 CENT = Decimal('0.01')
@@ -26,29 +25,19 @@ class LineInput:
 class PricingResult:
     subtotal_base: Decimal
     subtotal_with_product_discounts: Decimal
-    promo_code: str | None
-    promo_discount_amount: Decimal
-    stackable: bool | None
     cashback_used: Decimal
     total: Decimal
     lines: list[dict] = field(default_factory=list)
     explanation: str = ''
 
 
-def _apply_promo(amount: Decimal, promo: PromoCode) -> Decimal:
-    if promo.discount_type == PromoDiscountType.PERCENT:
-        return money(amount * (promo.value / Decimal('100')))
-    return money(min(promo.value, amount))
-
-
 def calculate_checkout(
     lines: Iterable[LineInput],
-    promo: PromoCode | None = None,
     cashback_to_use: Decimal = ZERO,
 ) -> PricingResult:
     """
-    stackable=True  → товарные скидки, затем промокод от этой суммы.
-    stackable=False → min(только товарные, база+промокод) — выгоднее клиенту.
+    Сумма позиций по effective_price (товарные скидки).
+    cashback_to_use обрезается сверху по total после скидок (порог X — шаг 14).
     """
     lines = list(lines)
     detail_lines: list[dict] = []
@@ -70,40 +59,8 @@ def calculate_checkout(
             'line_with_product_discount': lt_disc,
         })
 
-    promo_amount = ZERO
-    stackable = None
-    explanation = 'Без промокода: сумма с товарными скидками'
     working = subtotal_disc
-    code_str = None
-
-    if promo is not None:
-        if not promo.is_currently_valid():
-            raise ValueError('Промокод недействителен')
-        code_str = promo.code
-        stackable = promo.stackable_with_product_discounts
-
-        if stackable:
-            promo_amount = _apply_promo(subtotal_disc, promo)
-            working = money(subtotal_disc - promo_amount)
-            explanation = 'Суммирование: товарные скидки + промокод'
-        else:
-            total_a = subtotal_disc
-            promo_b = _apply_promo(subtotal_base, promo)
-            total_b = money(subtotal_base - promo_b)
-            if total_b <= total_a:
-                promo_amount = promo_b
-                working = total_b
-                explanation = (
-                    'Без суммирования: база + промокод '
-                    f'(выгоднее товарных-only {total_a})'
-                )
-            else:
-                promo_amount = ZERO
-                working = total_a
-                explanation = (
-                    'Без суммирования: только товарные скидки '
-                    f'(выгоднее базы+промо {total_b})'
-                )
+    explanation = 'Сумма с товарными скидками'
 
     cashback_used = money(cashback_to_use)
     if cashback_used < ZERO:
@@ -114,9 +71,6 @@ def calculate_checkout(
     return PricingResult(
         subtotal_base=money(subtotal_base),
         subtotal_with_product_discounts=money(subtotal_disc),
-        promo_code=code_str,
-        promo_discount_amount=money(promo_amount),
-        stackable=stackable,
         cashback_used=cashback_used,
         total=money(working - cashback_used),
         lines=detail_lines,

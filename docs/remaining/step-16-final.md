@@ -1,6 +1,6 @@
-# Шаг 17 — Финальный прогон по ТЗ
+# Шаг 16 — Финальный прогон по ТЗ
 
-**Предыдущий:** [step-16-celery-emails.md](step-16-celery-emails.md) · **Следующий:** —
+**Предыдущий:** [step-15-celery-emails.md](step-15-celery-emails.md) · **Следующий:** —
 
 ## Задача
 
@@ -20,7 +20,6 @@
 | GET | `/api/products/` | все (гость — только active) |
 | POST/PUT/PATCH/DELETE | `/api/products/…` | менеджер |
 | CRUD | `/api/discounts/` | менеджер |
-| CRUD | `/api/promo-codes/` | менеджер |
 | GET/POST/PATCH/DELETE | `/api/cart/…` | клиент confirmed |
 | POST | `/api/checkout/preview/` | клиент |
 | GET/POST | `/api/orders/` | клиент |
@@ -42,8 +41,6 @@
 | ☐ | Клиент удаляет из корзины | DELETE `/api/cart/items/{id}/` |
 | ☐ | Скидки на товары менеджером | POST `/api/discounts/`, `effective_price` |
 | ☐ | Подписка на рассылку раз в неделю | POST `/api/newsletter/` + Celery Beat / `send_weekly_discounts` |
-| ☐ | Промокод на итог | preview + order с `promo_code` |
-| ☐ | Суммирование / не суммирование | `STACK10` vs `NOSUM5`, смотреть `explanation` |
 | ☐ | Заказ + notify 1d / 6h / 1h | POST order с `notify_before`, задача в Celery |
 
 ---
@@ -62,10 +59,10 @@
 ## 4. Сквозной сценарий (30 минут)
 
 1. Поднять: Postgres, Redis, `runserver`, `celery worker`, `celery beat`.
-2. Войти менеджером → создать категорию + 2 товара → скидку 20% на один → промокоды STACK/NOSUM → settings `percent=5`, `X=30`.
+2. Войти менеджером → создать категорию + 2 товара → скидку 20% на один → settings `percent=5`, `X=30`.
 3. Зарегистрировать клиента → confirm из консоли → JWT.
 4. Гостем открыть каталог (без токена).
-5. Клиентом: 2 позиции в корзину, изменить qty, preview с STACK10.
+5. Клиентом: 2 позиции в корзину, изменить qty, preview (total = сумма effective).
 6. Оформить заказ с `notify_before=6h`.
 7. Проверить wallet, второй заказ со списанием кэшбэка (если хватает).
 8. Подписать newsletter → `python manage.py send_weekly_discounts`.
@@ -85,7 +82,6 @@
 | Письма «не приходят» | смотрите не ту консоль | console backend пишет в процесс, где вызван send_mail (worker!) |
 | Celery задача молчит | нет worker / неверный `-A config` | проверить лог worker |
 | Неверная сумма | считают float / забыли effective_price | только Decimal + pricing service |
-| Промокод «не суммируется» странно | не прочитали правило min(A,B) | шаг 11–12 |
 
 ---
 
@@ -105,7 +101,7 @@ TMS_drf_online_shop/
 ├── catalog/           # Category, Product, ProductDiscount
 ├── cart/              # Cart, CartItem
 ├── orders/            # Order, tasks напоминания
-├── promotions/        # PromoCode, Newsletter, ShopSettings, pricing
+├── promotions/        # Newsletter, ShopSettings, pricing
 ├── core/              # health, echo
 └── docs/
 ```
@@ -140,8 +136,7 @@ pytest --cov=accounts --cov=catalog --cov=cart --cov=orders --cov=promotions --c
 | Регистрация + email | `test_registration.py` |
 | Корзина qty | `test_cart_api.py` |
 | Скидки на товары | `test_discounts*.py` |
-| Промокоды | `test_promo_codes*.py` |
-| Суммирование цен | `test_pricing.py` |
+| Расчёт цены | `test_pricing.py` |
 | Заказ + notify | `test_orders_api.py`, `test_celery_tasks.py` |
 | Рассылка | `test_newsletter.py` |
 | Кэшбэк + порог X | `test_cashback*.py` |
@@ -152,7 +147,7 @@ pytest --cov=accounts --cov=catalog --cov=cart --cov=orders --cov=promotions --c
 |---|-------------------|----------|
 | ☐ | `pytest -q` | все зелёные |
 | ☐ | Нет тестов, помеченных `skip` без причины | — |
-| ☐ | `test_pricing` покрывает STACK и NOSUM | оба правила |
+| ☐ | `test_pricing` — товарная скидка 100→80 | Decimal |
 | ☐ | `test_catalog_public` — гость не видит скрытое | 200/404 |
 | ☐ | `test_cashback` — отказ при balance < X | ValueError / 400 |
 

@@ -1,12 +1,12 @@
-# Шаг 13 — Заказ и уведомление о доставке
+# Шаг 12 — Заказ и уведомление о доставке
 
-**Предыдущий:** [step-12-pricing-service.md](step-12-pricing-service.md) · **Следующий:** [step-14-newsletter.md](step-14-newsletter.md)
+**Предыдущий:** [step-11-pricing-service.md](step-11-pricing-service.md) · **Следующий:** [step-13-newsletter.md](step-13-newsletter.md)
 
 ## Задача
 
-Клиент оформляет **заказ** из корзины: промокод (опционально), желаемое время доставки, и выбирает, когда получить email-напоминание: **за 1 день / за 6 часов / за 1 час** до доставки.
+Клиент оформляет **заказ** из корзины: желаемое время доставки и когда получить email-напоминание: **за 1 день / за 6 часов / за 1 час** до доставки.
 
-Пока Celery может быть «заглушкой» через `apply_async(eta=…)` или даже синхронный `send_mail` для проверки — полноценный Beat/worker на шаге 16.
+Пока Celery может быть «заглушкой» через `apply_async(eta=…)` или даже синхронный `send_mail` для проверки — полноценный Beat/worker на шаге 15.
 
 ---
 
@@ -19,7 +19,7 @@ Product.price изменился позже — старые заказы НЕ �
 
 В `OrderItem` храним: `product` (FK или null), `product_name`, `unit_price`, `quantity`, `line_total`.
 
-Весь `create` заказа — в `transaction.atomic()`: заказ + позиции + очистка корзины + инкремент `promo.used_count`.
+Весь `create` заказа — в `transaction.atomic()`: заказ + позиции + очистка корзины.
 
 ---
 
@@ -62,8 +62,6 @@ class Order(models.Model):
         choices=OrderStatus.choices,
         default=OrderStatus.NEW,
     )
-    promo_code = models.CharField(max_length=32, blank=True)
-    promo_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cashback_used = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cashback_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -115,11 +113,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from cart.services import get_or_create_cart
-from promotions.models import PromoCode
 from promotions.services import LineInput, calculate_checkout
 
 from .models import NotifyBefore, Order, OrderItem
-from .tasks import schedule_delivery_notification  # шаг 16; пока заглушка ниже
+from .tasks import schedule_delivery_notification  # шаг 15; пока заглушка ниже
 
 
 NOTIFY_DELTA = {
@@ -129,7 +126,7 @@ NOTIFY_DELTA = {
 }
 
 
-def create_order_from_cart(*, user, delivery_at, notify_before, promo_code='', cashback_to_use=Decimal('0')):
+def create_order_from_cart(*, user, delivery_at, notify_before, cashback_to_use=Decimal('0')):
     if delivery_at <= timezone.now():
         raise ValueError('delivery_at должен быть в будущем')
 
@@ -140,25 +137,14 @@ def create_order_from_cart(*, user, delivery_at, notify_before, promo_code='', c
     if not items:
         raise ValueError('Корзина пуста')
 
-    promo = None
-    code = (promo_code or '').strip().upper()
-    if code:
-        try:
-            promo = PromoCode.objects.get(code=code)
-        except PromoCode.DoesNotExist as exc:
-            raise ValueError('Промокод не найден') from exc
-
     pricing = calculate_checkout(
         [LineInput(product=i.product, quantity=i.quantity) for i in items],
-        promo=promo,
         cashback_to_use=cashback_to_use,
     )
 
     with transaction.atomic():
         order = Order.objects.create(
             user=user,
-            promo_code=pricing.promo_code or '',
-            promo_discount_amount=pricing.promo_discount_amount,
             cashback_used=pricing.cashback_used,
             subtotal=pricing.subtotal_with_product_discounts,
             total=pricing.total,
@@ -174,10 +160,6 @@ def create_order_from_cart(*, user, delivery_at, notify_before, promo_code='', c
                 quantity=line['quantity'],
                 line_total=line['line_with_product_discount'],
             )
-        if promo and pricing.promo_discount_amount > 0:
-            PromoCode.objects.filter(pk=promo.pk).update(
-                used_count=promo.used_count + 1
-            )
         cart.items.all().delete()
 
     notify_at = delivery_at - NOTIFY_DELTA[notify_before]
@@ -185,7 +167,7 @@ def create_order_from_cart(*, user, delivery_at, notify_before, promo_code='', c
     return order, pricing
 ```
 
-Временная заглушка `orders/tasks.py` (до шага 16):
+Временная заглушка `orders/tasks.py` (до шага 15):
 
 ```python
 from django.core.mail import send_mail
@@ -195,7 +177,7 @@ from django.conf import settings
 def schedule_delivery_notification(order_id: int, notify_at):
     """
     Заглушка: в консоль пишем, когда нужно напомнить.
-    На шаге 16 заменим на Celery eta=notify_at.
+    На шаге 15 заменим на Celery eta=notify_at.
     """
     print(f'[notify stub] order={order_id} at {notify_at.isoformat()}')
     # Для демо можно сразу отправить письмо:
@@ -231,7 +213,6 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = (
             'id', 'status', 'items',
-            'promo_code', 'promo_discount_amount',
             'cashback_used', 'cashback_earned',
             'subtotal', 'total',
             'delivery_at', 'notify_before',
@@ -243,7 +224,6 @@ class OrderSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.Serializer):
     delivery_at = serializers.DateTimeField()
     notify_before = serializers.ChoiceField(choices=NotifyBefore.choices)
-    promo_code = serializers.CharField(required=False, allow_blank=True, default='')
     cashback_to_use = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False, default=0,
     )
@@ -251,7 +231,10 @@ class CreateOrderSerializer(serializers.Serializer):
 
 `orders/views.py`:
 
+`create` не из `ModelViewSet` — без `@extend_schema(request=CreateOrderSerializer)` Swagger нарисует `OrderSerializer` (все поля read-only) и Try it out сломается.
+
 ```python
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
@@ -261,6 +244,10 @@ from .serializers import CreateOrderSerializer, OrderSerializer
 from .services import create_order_from_cart
 
 
+@extend_schema_view(
+    list=extend_schema(summary='Мои заказы', tags=['orders']),
+    retrieve=extend_schema(summary='Заказ', tags=['orders']),
+)
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     """
     GET  /api/orders/       — мои заказы
@@ -277,6 +264,12 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             .prefetch_related('items')
         )
 
+    @extend_schema(
+        summary='Оформить заказ из корзины',
+        tags=['orders'],
+        request=CreateOrderSerializer,
+        responses={201: OrderSerializer},
+    )
     def create(self, request):
         ser = CreateOrderSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -303,8 +296,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
 ```json
 {
   "delivery_at": "2026-08-01T18:00:00+03:00",
-  "notify_before": "6h",
-  "promo_code": "STACK10"
+  "notify_before": "6h"
 }
 ```
 
@@ -328,6 +320,8 @@ def validate(self, attrs):
 
 ## ✅ Ручная проверка
 
+В [Swagger](http://127.0.0.1:8000/api/docs/): Authorize **клиентом** → тег **orders**. POST body — `delivery_at`, `notify_before`, `cashback_to_use` (`CreateOrderSerializer`), не snapshot заказа. Корзина непустая (шаг 9).
+
 ```bash
 # положите товары в корзину (шаг 9), затем:
 curl -s -X POST http://127.0.0.1:8000/api/orders/ \
@@ -335,8 +329,7 @@ curl -s -X POST http://127.0.0.1:8000/api/orders/ \
   -H 'Content-Type: application/json' \
   -d '{
     "delivery_at": "2026-08-10T18:00:00+03:00",
-    "notify_before": "1d",
-    "promo_code": "STACK10"
+    "notify_before": "1d"
   }' | python -m json.tool
 
 curl -s http://127.0.0.1:8000/api/orders/ \
@@ -345,6 +338,7 @@ curl -s http://127.0.0.1:8000/api/orders/ \
 
 | ☐ | Действие | Ожидаемый результат |
 |---|----------|---------------------|
+| ☐ | Тег **orders** в `/api/docs/` | POST с `delivery_at` / `notify_before` |
 | ☐ | POST order при полной корзине | 201, items snapshot, total |
 | ☐ | Корзина после заказа | пустая |
 | ☐ | В консоли stub notify | время напоминания |
@@ -422,4 +416,4 @@ def test_order_past_delivery_rejected(client_api, client_user):
 pytest tests/test_orders_api.py
 ```
 
-**Все пункты отмечены?** → [step-14-newsletter.md](step-14-newsletter.md)
+**Все пункты отмечены?** → [step-13-newsletter.md](step-13-newsletter.md)
