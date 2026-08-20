@@ -5,8 +5,12 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from drf_spectacular.types import OpenApiTypes
 
 from accounts.permissions import IsManager
-from .models import Category, Product
-from .serializers import CategorySerializer, ProductSerializer
+from .models import Category, Product, ProductDiscount
+from .serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    ProductDiscountSerializer,
+)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -37,7 +41,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 )
 class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
-    queryset = Product.objects.select_related("category").all()
+    queryset = Product.objects.select_related("category").prefetch_related("discounts").all()
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
@@ -55,3 +59,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         if category:
             qs = qs.filter(category_id=category)
         return qs
+
+
+@extend_schema_view(
+    list=extend_schema(summary='Список скидок', tags=['discounts']),
+    retrieve=extend_schema(summary='Скидка', tags=['discounts']),
+    create=extend_schema(summary='Создать скидку (менеджер)', tags=['discounts']),
+    update=extend_schema(summary='Заменить скидку', tags=['discounts']),
+    partial_update=extend_schema(summary='Изменить скидку', tags=['discounts']),
+    destroy=extend_schema(summary='Удалить скидку', tags=['discounts']),
+)
+class ProductDiscountViewSet(viewsets.ModelViewSet):
+    queryset = ProductDiscount.objects.select_related('product').all()
+    serializer_class = ProductDiscountSerializer
+    permission_classes = [IsManager]
